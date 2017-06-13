@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ting Blog</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../css/clean-blog.css" rel="stylesheet">
+
+    <!-- Temporary navbar container fix -->
+    <style>
+    .navbar-toggler {
+        z-index: 1;
+    }
+    
+    @media (max-width: 576px) {
+        nav > .container {
+            width: 100%;
+        }
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed-top navbar-toggleable-md navbar-light" id="mainNav">
+        <div class="container">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu <i class="fa fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="post.html">文章</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <div class="post-heading">
+                        <h3>Java 等语言的 GC 为什么不实时释放内存?</h3>
+                        <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
+                        <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                <p>关键点在：</p><br/>
+                <p>最基本的纯引用计数方式的自动内存管理可以做到实时释放死对象，但却无法处理存在循环引用的对象图的释放。这个问题一定程度上可以通过引入弱引用的概念来解决，但通用的能处理带循环引用对象图的引用计数都是有别的管理方式备份的（通常是某种tracing GC，例如mark-sweep；也有名为“trial-deletion”的循环检测方法，但这个通常比tracing性能更差所以用得较少），例如CPython使用以引用计数为主、mark-sweep为辅的方式，Adobe Flash的ActionScript VM 2（AVM2）也是以延迟引用计数（DRC）为主、增量/保守式mark-sweep为辅。反之，像C++的std::shared_ptr就是纯引用计数，无法靠自己处理带循环引用的对象图，而必须靠程序员自己小心使用，在必要的地方用std::weak_ptr来破除循环；CPython在2.0之前也使用纯引用计数，无法处理循环引用，只能等着泄漏内存。既然通用的引用计数还得用tracing GC来备份，实现这样的自动内存管理等于得实现两份，想偷懒的话还不如一开始就只实现某种tracing GC，例如mark-sweep。</p><br>
+                <p>最基本的纯引用计数方式对引用计数器的操作非常频繁，这里有额外开销，至于是否严重到成问题就看具体应用的可忍受程度。在内存充裕的前提下，基本的tracing GC比基本的引用计数方式的性能更好（特别是从throughput角度看），不需要做冗余的计数器更新。同时，在多线程环境下引用计数器可能成为线程间共享的数据，需要做同步保护（这里把原子更新算同步保护的一种），这也是个额外开销的来源；因为tracing GC不需要维护引用计数器所以也就没有这种同步的开销。引用计数的这些性能缺点可以通过一些高级变种来缓解，例如前面提到AVM2的延迟引用计数，只记录堆上对象之间的引用计数而不记录栈上（主要是表达式临时值）对对象的引用计数，以此减少对计数器的更新次数来提高性能。详情可参考文档：MMgc | MDN。这些引用计数的高级变种通常意味着一定程度的延迟释放，跟楼主想实时释放的初衷就不符了。另一方面，虽然最基本的tracing GC会有较长的延迟，但它们也有高级变种，可以并行、并发、增量式执行，降低延迟；也有办法实现thread-local GC来应对像是“请求－响应”式的Web应用批量释放一个线程临时分配的对象的需求。</p><br/>
+                <p>如果选用tracing GC来实现自动内存管理，它是不显式维护对象的引用计数的，也就没有“引用计数到0”的概念。所以基于tracing GC的JVM或其它语言的运行时环境自然不会“引用计数到0就释放对象”。</p>
+                <p>引用计数方式其实也有经典的卡顿情况。例子之一就是一个对象个数很多、引用链很长的对象图假如只是被一个引用而留活，那么那个引用一死就会引发大量对象扎堆释放（但却不是“批量释放”，开销不同），这一样会引起卡顿。单纯讨论最坏情况的话其实引用计数也有这样糟糕的一面。纯人工的malloc()/free()或new/delete可以让程序员人肉找出生命周期相同的对象，然后利用诸如arena之类的方式为它们分配内存，就可以它们死的时候真正批量释放掉它们，这样就很高效；但纯引用计数却不是这么回事。使用引用计数会否遇到这种卡顿全看你的程序里对象图的引用关系是怎样的。</p>
+                </div>
+            </div>
+        </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="copyright text-muted">Copyright &copy; Your Website 2017</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/tether/tether.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="js/clean-blog.min.js"></script>
+
+</body>
+
+</html>
