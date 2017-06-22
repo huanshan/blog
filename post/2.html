@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ting Blog</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../css/clean-blog.css" rel="stylesheet">
+     <link href="../css/style.css" rel="stylesheet">
+    <!-- Temporary navbar container fix -->
+    <style>
+    .navbar-toggler {
+        z-index: 1;
+    }
+    
+    @media (max-width: 576px) {
+        nav > .container {
+            width: 100%;
+        }
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed-top navbar-toggleable-md navbar-light" id="mainNav">
+        <div class="container">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu <i class="fa fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../post.html">文章</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('../img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <div class="post-heading">
+                        <h3>关于位操作符</h3>
+                        <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
+                        <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                <div id="md-preview">
+<h3>移位操作符</h3>
+
+<p>移位操作符的运算对象是二进制的位，只能操作java的基础类型int，它的 二进制位数是32。 <br>
+移位操作符有几种：</p>
+
+<h4>左移位操作符 &lt;&lt;</h4>
+
+<p>左移操作符将操作符左边的操作数向左移动操作符右侧指定的位数，在低位补0。</p>
+
+<h4>右移位操作符 &gt;&gt;</h4>
+
+<p>右移位操作符按照不同的场景有不同的处理方式，对于有符号数，右移操作符将操作符左侧的整型数向右移动操作符右侧的位数。 <br>
+有符号数的右移操作符使用“符号扩展”： <br>
+1）若符号为正，则在高位插入0； <br>
+2）若符号为负，则在高位插入1；</p>
+
+<h4>无符号的右移操作符 &gt;&gt;&gt;</h4>
+
+<p>无符号的右移操作符使用的是“零扩展”，无论政府，都在高位插入0；</p>
+
+<blockquote>
+  <p>如果对char、byte和short类型的数值类型进行移位操作，在移位之前，会被转换为int类型，其结果也是int类型。只有数值右端的 <br>
+  低5位才生效，这样可防止移位超过int类型所具有的位数。若对long类型数值进行处理，那么结果也是long，此时只会对数值右端 <br>
+  的低6位生效，以防止移位超过long型数值具有的位数。</p>
+</blockquote>
+
+<h4>操作符&lt;&lt;== 与 &gt;&gt;==</h4>
+
+<p>此时，操作之左边的值会移动由右边的值指定的位数，然后将结果赋给左边的变量。</p>
+
+<blockquote>
+  <p>如果对byte或者short的值进行移位操作，得到的结果可能不正确。因为它们先被转换成int类型，然后进行移位做操，然后被截断 <br>
+  赋值给运来的类型。</p>
+</blockquote>
+
+<h4>代码示例</h4>
+
+<pre>public class Shift {
+    public static void main(String[] args){
+        int m = 1011;
+        System.out.println("m-&gt;" + Integer.toBinaryString(m));
+        System.out.println("m left shift 3 -&gt;" + Integer.toBinaryString(m &lt;&lt; 3));
+        System.out.println("m right shift 3 -&gt;" + Integer.toBinaryString(m &gt;&gt; 3));
+
+        int n = -1011;
+        System.out.println("n-&gt;" + Integer.toBinaryString(m));
+        System.out.println("n left shift 3 -&gt;" + Integer.toBinaryString(m &lt;&lt; 3));
+        System.out.println("n right shift 3 -&gt;" + Integer.toBinaryString(m &gt;&gt; 3));
+
+        int i = -1;
+        System.out.println("i -&gt;" + Integer.toBinaryString(i));
+        i &gt;&gt;&gt;= 10;
+        System.out.println("i &gt;&gt;&gt;= 10" + Integer.toBinaryString(i));
+
+        long l = -1;
+        System.out.println("l -&gt;" + Long.toBinaryString(l));
+        l &gt;&gt;&gt;= 10;
+        System.out.println("l &gt;&gt;&gt;= 10 -&gt;" + Long.toBinaryString(l));
+
+        short s = -1;
+        System.out.println("s -&gt;" + Integer.toBinaryString(s));
+        l &gt;&gt;&gt;= 10;
+        System.out.println("s &gt;&gt;&gt;= 10 -&gt;" + Integer.toBinaryString(s));
+
+        byte b = -1;
+        System.out.println("b -&gt;" + Integer.toBinaryString(b));
+        l &gt;&gt;&gt;= 10;
+        System.out.println("b &gt;&gt;&gt;= 10 -&gt;" + Integer.toBinaryString(b));
+
+        b = -1;
+        System.out.println("b &gt;&gt;&gt; 10 -&gt;" + Integer.toBinaryString(b &gt;&gt;&gt; 10));
+
+    }
+}
+
+</pre>
+
+<h4>运行结果</h4>
+
+<p></p><pre> <span class="diff"><br>
+    m-&gt;1111110011 <br>
+    m left shift 3 -&gt;1111110011000 <br>
+    m right shift 3 -&gt;1111110 <br>
+    n-&gt;1111110011 <br>
+    n left shift 3 -&gt;1111110011000 <br>
+    n right shift 3 -&gt;1111110 <br>
+    i -&gt;11111111111111111111111111111111 <br>
+    i &gt;&gt;&gt;= 101111111111111111111111 <br>
+    l -&gt;1111111111111111111111111111111111111111111111111111111111111111 <br>
+    l &gt;&gt;&gt;= 10 -&gt;111111111111111111111111111111111111111111111111111111 <br>
+    s -&gt;11111111111111111111111111111111 <br>
+    s &gt;&gt;&gt;= 10 -&gt;11111111111111111111111111111111 <br>
+    b -&gt;11111111111111111111111111111111 <br>
+    b &gt;&gt;&gt;= 10 -&gt;11111111111111111111111111111111 <br>
+    b &gt;&gt;&gt; 10 -&gt;1111111111111111111111<pre><p></p></pre></span></pre></div>
+                </div>
+            </div>
+        </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="copyright text-muted">Copyright &copy; Ting Blog 2017</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/tether.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="../js/clean-blog.js"></script>
+
+</body>
+
+</html>
