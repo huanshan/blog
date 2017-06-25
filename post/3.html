@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ting Blog</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../css/clean-blog.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+    <!-- Temporary navbar container fix -->
+    <style>
+    .navbar-toggler {
+        z-index: 1;
+    }
+    
+    @media (max-width: 576px) {
+        nav > .container {
+            width: 100%;
+        }
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed-top navbar-toggleable-md navbar-light" id="mainNav">
+        <div class="container">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu <i class="fa fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../post.html">文章</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('../img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <div class="post-heading">
+                        <h3>浅析Java类的初始化</h3>
+                        <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
+                        <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+<div id="md-preview" ><p>JVM加载完.class二进制文件，将其解析为方法区中的内部数据结构，并且会在堆上创建相应的class对象。当我们在使用这些对象时，我们会希望这些对象具备初始值， <br>
+为这些对象类变量分配内存，并赋予初始值的过程，就称之为“初始化”。</p>
+
+<h3>静态变量的初始化</h3>
+
+<p>JVM在加载.class文件到方法区时，会将类信息存储到方法区，将运行过程中的对象放到堆中，但是类中的静态类对象是放到方法区中的，因此方法区，也可以称为静态区。 <br>
+对于静态变量，如果该变量的值是一个常量，或者是在编译期便可以得到的值，并且使用final修饰，那么在加载该类的时候，该静态变量一同被初始化，使用该变量， <br>
+不会导致其所在类的初始化。这是因为JVM会将这样的字段解析成常量的本地拷贝，该常量存在引用者类的常量池或者字节码流中；</p>
+
+<pre>public interface Angry {
+    String greeting = "Grrrr!";
+    int angerLevel = Dog.getAngerLevel();
+}
+public class Dog {
+    final static String greeting = "Woof, Woof, Woof";
+    static {
+        System.out.println("Dog was initialized.");
+    }
+
+    static int getAngerLevel(){
+        System.out.println("Angry was initlized");
+        return 1;
+    }
+
+}
+public class Example {
+    public static void main(String[] args){
+        System.out.println(Angry.greeting);
+        System.out.println(Dog.greeting);
+    }
+
+    static {
+        System.out.println("Example was initialized");
+    }
+}
+</pre>
+
+<p>输出</p>
+
+<pre>Example was initialized
+Grrrr!
+Woof, Woof, Woof
+</pre>
+
+<p>接口Angry和类Dog都没有在Example的程序执行中被初始化；</p>
+
+<h4>主动使用</h4>
+
+<p>如果静态变量的值，比能在编译时被解析成一个敞亮的字段初始化语句，那么该变量在该类或者接口首次主动使用时，会被初始化。 <br>
+有6种活动被认为是主动使用：</p>
+
+<ul>
+    <li>当创建某个类的新实例时（或者通过在字节码中执行new指令，或者通过不明确的创建，反射克隆和反序列化）</li>
+    <li>当调用某个类的静态方法时</li>
+    <li>当使用某个类或接口的静态字段，或者对该字段赋值时，用final修饰的静态字段除外，它被初始化为一个编译时的常量表达式</li>
+    <li>当调用Java API中的某些反射方法时，比如类Class中的方法或者java.lang.reflect包中的类的方法</li>
+    <li>当初始化某个类的子类时，因为类的初始化要求它的超类首先被初始化</li>
+    <li>当虚拟机启动时，某个被标明为启动类的类，即含有mian()方法的那个类</li>
+</ul>
+
+<span class="diff"><h4>被动使用</h4>
+
+<p>与主动使用相对应的是被动使用，如果一个类或者接口含有非常量的静态字段，那么对于它的子类或者实现了该接口的实现类来说，就是被动使用。 <br>
+使用父类或者接口的静态字段，不会触发其子类或者实现类的初始化。</p>
+
+<pre>public class NewParent {
+    static int hourOfSleep = (int)(Math.random() * 3.0);
+    static {
+        System.out.println("New Parent was initialized");
+    }
+}
+
+public class NewBornBaby extends NewParent {
+    static int hourOfCrying= (int)(Math.random() * 2.0);
+    static {
+        System.out.println("NewBornbaby was initialized.");
+    }
+}
+
+public class Example {
+    public static void main(String[] args){
+        int hour = NewBornBaby.hourOfSleep;
+        System.out.println(hour);
+    }
+
+    static {
+        System.out.println("Example was initialized");
+    }
+}
+</pre>
+
+<p>输出为:</p>
+
+<pre>Example was initialized
+New Parent was initialized
+1
+</pre>
+
+<p>并未导致NewBornBaby的初始化，NewBornBaby没有初始化，也不会被装载。</p>
+
+<h3>非静态变量的初始化</h3>
+
+<p>非静态变量通过实例化的方法进行初始化。</p>
+
+<h4>默认类型的初始值</h4>
+
+<p>如果类变量使用的是默认类型，那么JVM会自动的为这些类变量赋值。先看一个例子</p>
+
+<pre>public class VariableInit {
+    int i ;
+    long l;
+    short s;
+    byte b;
+    char c;
+    boolean z;
+    float f;
+    double d;
+
+    public VariableInit(){
+        System.out.println(this);
+        System.out.println("init variable");
+    }
+    public String toString(){
+        return "variables[ i: " + i 
+                + ", l:" + l + ", s:" + s
+                + ", b:" + b + ", c:" + c
+                + ", z:" + z + ", f:" + f
+                + ", d:" + d + "]";
+    }
+}
+
+public class VariableRun {
+    public static void main(String[] args){
+        VariableInit init = new VariableInit();
+    }
+}
+</pre>
+
+<p>运行结果为：</p>
+
+<pre>variables[ i: 0, l:0, s:0, b:0, c: , z:false, f:0.0, d:0.0]
+init variable
+</pre>
+
+<p>虽然未对这些类变量进行任何初始化的操作，但是JVM已经为它们初始化好了值。</p>
+
+<h5>基础类型的默认初始值</h5>
+
+<table stype="border:1px solid #ccc;">
+<tbody><tr><td>类型</td><td>初始值</td></tr><tr>
+</tr><tr><td>int</td><td>0</td></tr><tr>
+</tr><tr><td>long</td><td>0L</td></tr><tr>
+</tr><tr><td>short</td><td>(short)0</td></tr><tr>
+</tr><tr><td>char</td><td>'\u0000'</td></tr><tr>
+</tr><tr><td>byte</td><td>(byte)0</td></tr><tr>
+</tr><tr><td>boolean</td><td>false</td></tr><tr>
+</tr><tr><td>float</td><td>0.0f</td></tr><tr>
+</tr><tr><td>double</td><td>0.0d</td></tr><tr>
+</tr></tbody></table>
+
+<h4>引用类型的初始值</h4>
+
+<p>如果将默认类型替换成引用类型，那默认的初始值是null;</p>
+
+<pre>public class VariableInit {
+    Integer i ;
+    Long l;
+    Short s;
+    Byte b;
+    String c;
+    Boolean z;
+    Float f;
+    Double d;
+
+    public VariableInit(){
+        System.out.println(this);
+        System.out.println("init variable");
+    }
+    public String toString(){
+        return "variables[ i: " + i 
+                + ", l:" + l + ", s:" + s
+                + ", b:" + b + ", c:" + c
+                + ", z:" + z + ", f:" + f
+                + ", d:" + d + "]";
+    }
+}
+</pre>
+
+<p>输出结果为：</p>
+
+<pre>variables[ i: null, l:null, s:null, b:null, c:null, z:null, f:null, d:null]
+init variable
+</pre></span></div>
+ </div>
+            </div>
+        </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="copyright text-muted">Copyright &copy; Ting Blog 2017</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/tether.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="../js/clean-blog.js"></script>
+
+</body>
+
+</html>
