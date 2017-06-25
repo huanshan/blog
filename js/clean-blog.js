@@ -38,4 +38,14 @@
             });
     }
 
+    if($('#md-preview pre').length > 0){
+        var pattern = /(abstract|continue|for|new|switch|default|package|synchronized|boolean|do|if|private|this|break|double|implements|protected|throw|byte|else|import|public|throws|case|enum|instanceof|return|transient|catch|extends|int|short|try|char|final|interface|static|void|class|finally|long|volatile|const|float|native|super|while)/
+        $('#md-preview pre').each(function(){
+            var text = $(this).text();
+            // text = text.replace(pattern, '<span class="key-word">$1</span>');
+            // text = text.replace(pattern, '%3Cspan+class%3D%22key-word%22%3E%241%3C%2Fspan%3E');
+            $(this).text(text);
+        })
+    }
+
 })(jQuery); // End of use strict
