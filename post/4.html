@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ting Blog</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../css/clean-blog.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+    <!-- Temporary navbar container fix -->
+    <style>
+    .navbar-toggler {
+        z-index: 1;
+    }
+    
+    @media (max-width: 576px) {
+        nav > .container {
+            width: 100%;
+        }
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed-top navbar-toggleable-md navbar-light" id="mainNav">
+        <div class="container">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu <i class="fa fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../post.html">文章</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('../img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <div class="post-heading">
+                        <h3>关于java泛型</h3>
+                        <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
+                        <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                <div id="md-preview">
+                
+<p>泛型是Java 5中出现的新特性，允许在定义类和接口的时候使用的参数类型。声明的类型参数在使用时可以用具体的类型来替换。</p>
+
+<h4>泛型擦除</h4>
+
+<p>理解“泛型擦除“是理解泛型的核心，泛型擦除指的是Java中的泛型基本上都是在编译器的层次来实现的。在生成的.class字节文件中，使用泛型信息表示的类型信息不会被包含，因此，在使用泛型的时候加上的参数类型，会被编译器在编译的时候请去掉。 <br>
+定义List&lt;Integer&gt;和List &lt;String&gt;，在编译之后都会变成List,在JVM中能够看到的，只有List. <br>
+因此，泛型的作用是使编译器在编译的时候尽可能的发现可能出错的地方，避免在运行时出现类型转换异常的错误。 <br>
+不妨看一个例子</p>
+
+<pre>public static void  main(String[] args){
+        ArrayList&lt;String&gt; strList = new ArrayList&lt;&gt;();
+        ArrayList&lt;Integer&gt; intList = new ArrayList&lt;&gt;();
+//        intList.add("hello"); //编译无法通过，添加不成功
+        try {
+            Method adm = intList.getClass().getMethod("add", Object.class);
+            adm.invoke(intList, "hello");
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
+        System.out.println("Integer ArrayList:" + Arrays.toString(intList.toArray()));
+}
+</pre>
+
+<p>查看一下运行结果</p>
+
+<pre>Integer ArrayList:[hello]
+</pre>
+
+<p>可以发现，如果直接使用Integer数组对象的add方法添加String，那么编译器会报错，添加不能成功。但是如果绕过编译器，采用发射的方式添加，便能添加成功；这充分说明了，泛型的有效期只在编译之前。 <br>
+正是因为泛型的“擦除”特性，使得泛型包含许多奇怪的特性：</p>
+
+<h5>泛型类斌没有自己独有的class类对象</h5>
+
+<p>例如List&lt;Integer&gt;与List&lt;String&gt;的类型相同；下面比较返回的是true;</p>
+
+<pre>System.out.println(strList.getClass() == intList.getClass());
+</pre>
+
+<h5>静态变量是被泛型类的所有实例共享的</h5>
+
+<p>对于声明MyClass&lt;T&gt;的类，不过是通过new MyClass<string>还是new MyClass<integer>创建的对象，都是共享一个静态变量；</integer></string></p>
+
+<h5>泛型的类型参数不能用在Java异常处理的catch语句中</h5>
+
+<p>因为异常处理是由JVM在运行的时刻进行的，由于类型被擦除，JVM是无法区分两个异常类型的MyException<string>和MyException<integer>的；</integer></string></p>
+
+<h3>擦除过程</h3>
+
+<p>泛型的擦除过程比较简单，找到用来替换类型参数的具体类，一般是Object，如果指定了参数类型的上界的话，则使用这个上界，然后把代码中的泛型参数都替换成具体的类。另外，去掉类型声明即&lt;&gt;的内容。 <br>
+例如 T getValue()就变成了 Object getValue(); List&lt;String&gt;就变成了List;</p>
+
+<h4>实例</h4>
+
+<pre>publlic void inspect(List&lt;Object&gt; list){
+    for(Object obj : list){
+        System.out.println(obj);
+    }
+    list.add(1);
+}
+public void test(){
+    List<string> list = new ArrayList&lt;&gt;();
+    inspect(list);//编译出错
+}
+</string></pre>
+
+<p>inspect方法接收List&lt;Object&gt;作为参数，但在test()方法调用改方法并传入List&lt;String&gt;类型的参数是，会出现编译错误，很明显，编译器禁止了本以为能够进行类型转换的参数，这是因为编译器处于安全的考虑，假设编译通过，那么在inspect方法中，我们向list加入Integer类型（在当前的上下文环境中，这是被允许的），就导致了传入的List&lt;String&gt;中出现了不被允许的Integer类型，因此，编译器会尽可能的检查可能存在的类型安全问题，禁止这样的行为。</p>
+
+<h3>通配符与上下界</h3>
+
+<p>在使用泛型类的时候，可以指定一个具体的类型，List&lt;Integer&gt;声明了具体类型Integer，也可以使用通配符?来表示未知类型。List&lt;?&gt;就声明了List中包含的元素类型是未知的。通配符?所代表的其实是一组类型，具体的类型根据实际的使用类型而定。List&lt;?&gt;表示所有的类型都可以，其不同于List&lt;Object&gt;，后者实际上确定了List中包含的元素是Object及其子类，在使用的时候都可以通过Object来进行引用，而List&lt;?&gt;则表示其中 的元素是不确定的，其中可能包含String，也可能包含Integer，但是，如果已经包含了String，继续添加Integer类型 <br>
+的元素是会报错的。因为类型未知，就不能通过new ArrayList&lt;?&gt;来创建一个新的ArrayList对象，因为编译器无法知道具体的类型是什么。</p>
+
+<pre>    public void test(List&lt;?&gt; list){
+        list.add(1);//编译出错
+    }
+</pre>
+
+<p>如上所示，使用List&lt;?&gt;定义的list不能向其中添加元素，因为编译器并不知道是什么类型； <br>
+对于List&lt;?&gt;中的元素，总是可以用Object来引用的。但是在有的情况下并不方便，限定过于粗糙。在这些情况下，可以用上下界来限定未知类型的范围。List&lt;? extends MyClass&gt;说明list中可能包含的元素类型是MyClass及其子类，而List&lt;? super MyClass&gt;则说明List中包含的是MyClass及其父类。当引入了上下边界之后，在使用类型的时候就可以使用上下界中定义的方法。</p>
+
+<h4>类型系统</h4>
+
+<p>在Java中，大家比较熟悉的是通过继承机制而产生的类型体系结构。比如String继承自Object。根据Liskov替换原则，子类是可以替换父类的。当需要Object类的引用的时候，如果传入一个String对象是没有任何问题的。但是反过来的话，即用父类的引用替换子类引用的时候，就需要进行强制类型转换。编译器并不能保证运行时刻这种转换一定是合法的。这种自动的子类替换父类的类型转换机制，对于数组也是适用的。 String[]可以替换Object[]。但是泛型的引入，对于这个类型系统产生了一定的影响。正如前面提到的List&lt;String&gt;是不能替换掉List&lt;Object&gt;的。</p>
+
+<p>引入泛型之后的类型系统增加了两个维度：一个是类型参数自身的继承体系结构，另外一个是泛型类或接口自身的继承体系结构。第一个指的是对于 List&lt;String&gt;和List&lt;Object&gt;这样的情况，类型参数String是继承自Object的。而第二种指的是 List接口继承自Collection接口。对于这个类型系统，有如下的一些规则：</p>
+
+<h5>相同类型参数的泛型类的关系取决于泛型类自身的继承体系结构。</h5>
+
+<p>即List&lt;String&gt;是Collection&lt;String&gt; 的子类型，List&lt;String&gt;可以替换Collection&lt;String&gt;。这种情况也适用于带有上下界的类型声明。</p>
+
+<h5>当泛型类的类型声明中使用了通配符的时候， 其子类型可以在两个维度上分别展开。</h5>
+
+<p>如对Collection&lt;? extends Number&gt;来说，其子类型可以在Collection这个维度上展开，即List&lt;? extends Number&gt;和Set&lt;? extends Number&gt;等；也可以在Number这个层次上展开，即Collection&lt;Double&gt;和 Collection&lt;Integer&gt;等。如此循环下去，ArrayList&lt;Long&gt;和 HashSet&lt;Double&gt;等也都算是Collection&lt;? extends Number&gt;的子类型。 <br>
+如果泛型类中包含多个类型参数，则对于每个类型参数分别应用上面的规则。</p>
+
+<h4>最佳实践</h4>
+
+<h5>在使用泛型的时候可以遵循一些基本的原则，从而避免一些常见的问题。</h5>
+
+<h5>在代码中避免泛型类和原始类型的混用。</h5>
+
+<p>比如List&lt;String&gt;和List不应该共同使用。这样会产生一些编译器警告和潜在的运行时异常。当需要利用JDK 5之前开发的遗留代码，而不得不这么做时，也尽可能的隔离相关的代码。</p>
+
+<h5>在使用带通配符的泛型类的时候，需要明确通配符所代表的一组类型的概念。</h5>
+
+<p>由于具体的类型是未知的，很多操作是不允许的。</p>
+
+<h5>泛型类最好不要同数组一块使用。</h5>
+
+<p>你只能创建new List&lt;?&gt;[10]这样的数组，无法创建new List&lt;String&gt;[10]这样的。这限制了数组的使用能力，而且会带来很多费解的问题。因此，当需要类似数组的功能时候，使用集合类即可。</p>
+
+<span class="diff"><h5>不要忽视编译器给出的警告信息。</h5></span>
+                </div>
+            </div>
+        </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="copyright text-muted">Copyright &copy; Ting Blog 2017</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/tether.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="../js/clean-blog.js"></script>
+
+</body>
+
+</html>
