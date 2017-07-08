@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ting Blog</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../css/clean-blog.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+    <!-- Temporary navbar container fix -->
+    <style>
+    .navbar-toggler {
+        z-index: 1;
+    }
+    
+    @media (max-width: 576px) {
+        nav > .container {
+            width: 100%;
+        }
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed-top navbar-toggleable-md navbar-light" id="mainNav">
+        <div class="container">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu <i class="fa fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../post.html">文章</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('../img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <div class="post-heading">
+                        <h3>java泛型:创建自己的泛型</h3>
+                        <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
+                        <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                <div id="md-preview">
+<h5>泛型类</h5>
+
+<p>如果我们要创建一个key-value类型的类，我们首先会想到的是根据具体的使用类型来创建，例如我们需要一个key为String, value为String类型的类时</p>
+
+<pre>public class ContainerString {
+    private String key;
+    private String value;
+    public ContainerString(String key, String value){
+        this.key = key;
+        this.value = value;
+    }
+
+    public String toString(){
+        return "key-&gt;" + key + ", value-&gt;" + value;
+    }
+}
+</pre>
+
+<p>在使用时：</p>
+
+<pre>public class ContainerTest {
+    public static void main(String[] args){
+        ContainerString strc = new ContainerString("sun", "hello");
+        System.out.print(strc);
+    }
+}
+</pre>
+
+<p>输出：</p>
+
+<pre>key-&gt;sun, value-&gt;hello
+</pre>
+
+<p>非常符合我们的实际需求，但是如果我们还需要一个key为String, value为Integer类型的类时，我们还是需要创建一个新的key-value类，这样无疑会出现我们不想要的代码重复； <br>
+泛型，为我们提供了很好的解决方案，我们可以直接定义一个泛型类，来满足我们各种类型key-value的需求：</p>
+
+<pre>public class Container&lt;K, V&gt; {
+    private K key;
+    private V value;
+    public Container(K key, V value){
+        this.key = key;
+        this.value = value;
+    }
+
+    public String toString(){
+        return "key-&gt;" + key + ", value-&gt;" + value;
+    }
+}
+</pre>
+
+<p>然后可以满足我们的各种需求了</p>
+
+<pre>public class ContainerTest {
+    public static void main(String[] args){
+        Container c1 = new Container&lt;String, String&gt;("sun", "hello");
+        System.out.println(c1);
+        Container c2 = new Container&lt;String, Integer&gt;("age", 28);
+        System.out.println(c2);
+    }
+}
+</pre>
+
+<p>输出：</p>
+
+<pre>key-&gt;sun, value-&gt;hello
+key-&gt;age, value-&gt;28
+</pre>
+
+<h5>泛型接口</h5>
+
+<p>泛型接口的定义方法，与泛型类基本一致，我们定义一个生成器的接口：</p>
+
+<pre>public interface Generator&lt;T&gt; {
+    public T next();
+}
+</pre>
+
+<p>那么，这个通过泛型接口就可以实现各种类型的生成器，我们来实现一个水果生成器</p>
+
+<pre>public class FruitGenerator implements Generator&lt;String&gt; {
+    private String[] fruits = new String[]{"apple", "banana", "pear"};
+    public String next(){
+        Random rand = new Random();
+        return fruits[rand.nextInt(3)];
+    }
+}
+</pre>
+
+<p>使用一下</p>
+
+<pre>public class GeneratorTest {
+    public static void main(String[] args){
+        Generator g = new FruitGenerator();
+        System.out.println(g.next());
+        System.out.println(g.next());
+        System.out.println(g.next());
+        System.out.println(g.next());
+        System.out.println(g.next());
+    }
+}
+</pre>
+
+<h5>泛型方法</h5>
+
+<p>如果可以，我们尽量使我们的方法泛型化，尤其是定义的一些底层方法，这样会使我们在使用中减少大量的不必要的重复coding. <br>
+泛型方法一般指的是参数泛型化和返回结果泛型化，前面定义的泛型类中，为类变量加上getter和setter方法，这些方法就是泛型方法。</p>
+
+<pre>public class Container&lt;K, V&gt; {
+    private K key;
+    private V value;
+    public Container(K key, V value){
+        this.key = key;
+        this.value = value;
+    }
+
+    public K getKey() {
+        return key;
+    }
+
+    public void setKey(K key) {
+        this.key = key;
+    }
+
+    public V getValue() {
+        return value;
+    }
+
+    public void setValue(V value) {
+        this.value = value;
+    }
+
+    public String toString(){
+        return "key-&gt;" + key + ", value-&gt;" + value;
+    }
+}
+</pre>
+
+<h5>类型说明符</h5>
+
+<p>&lt;&gt;是用来说明泛型标志的，可以当做是规范参数，例如<t>, <k, v="">等，对于一个泛型类或者泛型接口来说，它位于类名或者接口名的后面，对于泛型类或者接口来说，内部使用的泛型参数必须是在类型或者接口名后面标识了的，例如Myclass<t>内部如果直接使用K来定义一个类变量的话，编译器会报错，如果只是类中某一个方法使用泛型的话，我们可以只定义泛型方法，在定义该方法时，需要在方法返回值前加上类型标识； <br>
+例如，我们修改一下类型接口：</t></k,></t></p>
+
+<pre>public interface Generator {
+    public ;&lt;T&gt; T next();
+}
+</pre>
+
+<p>那么该接口不是一个泛型接口，但是该接口的next方法是一个泛型方法；</p>
+
+<h4>总结：</h4>
+
+<p>泛型的使用，无疑会大大减少我们的重复工作，提高代码的简洁性和可阅读性，在实际的工作中具有非常大的作用。<span class="diff"></span></p>
+</div>
+            </div>
+        </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="copyright text-muted">Copyright &copy; Ting Blog 2017</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/tether.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="../js/clean-blog.js"></script>
+
+</body>
+
+</html>

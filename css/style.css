@@ -28,11 +28,11 @@ body{font-family:"Arial";}
 .md-prompt-dialog form{margin-top:10px;}
 .md-prompt-dialog input[type="text"]{margin-bottom:10px;width:100%;}
 .md-prompt-dialog button{margin-right:10px;}
-#md-preview{background:#FFF;margin:1em 0;padding:0 15px;word-wrap:break-word;overflow:auto;-webkit-border-radius:2px;-moz-border-radius:2px;-ms-border-radius:2px;-o-border-radius:2px;border-radius:2px;}
+#md-preview{background:#FFF;margin:1em 0;padding:0 15px;word-wrap:break-word;overflow:auto;-webkit-border-radius:2px;-moz-border-radius:2px;-ms-border-radius:2px;-o-border-radius:2px;border-radius:2px;line-height: 1.6;}
 #md-preview img{max-width:100%;}
 #md-preview code,#md-preview pre{background:#fff;font-size:.92857em;}
 #md-preview code{color:#000;}
-#md-preview pre{padding:0.5em;line-height: 1.1em;border:1px solid #ccc;}
+#md-preview pre{padding:0.5em;line-height: 1.45em;background: url(../img/blueprint.png) #F6F6F6;padding: 9.5px;margin: 0 0 10px;font-size: 13px;color: #333;background-color: #f5f5f5;border: 1px solid #ccc;border-radius: 4px;}
 #md-preview pre code{padding:0;color:#444;}
 #md-preview blockquote{margin:1em 1.5em;padding-left:1.5em;border-left:4px solid #E9E9E6;color:#777;}
 #md-preview hr{margin:0.5em auto;border:1px solid #E9E9E6;border-width:2px 0 0 0;}

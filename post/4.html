@@ -82,7 +82,7 @@
 因此，泛型的作用是使编译器在编译的时候尽可能的发现可能出错的地方，避免在运行时出现类型转换异常的错误。 <br>
 不妨看一个例子</p>
 
-<pre>public static void  main(String[] args){
+<pre>public static void  <span class="red">main</span>(String[] args){
         ArrayList&lt;String&gt; strList = new ArrayList&lt;&gt;();
         ArrayList&lt;Integer&gt; intList = new ArrayList&lt;&gt;();
 //        intList.add("hello"); //编译无法通过，添加不成功
