@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ting Blog</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../css/clean-blog.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+    <!-- Temporary navbar container fix -->
+    <style>
+    .navbar-toggler {
+        z-index: 1;
+    }
+    
+    @media (max-width: 576px) {
+        nav > .container {
+            width: 100%;
+        }
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed-top navbar-toggleable-md navbar-light" id="mainNav">
+        <div class="container">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu <i class="fa fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../post.html">文章</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('../img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <div class="post-heading">
+                        <h3>认识java web编程:servlet--Http状态码与异常处理</h3>
+                        <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
+                        <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+<div id="md-preview">
+
+<h5>Http状态码</h5>
+
+<p>对于一个http请求，服务器的返回response是遵行一定的消息格式的，其基本的格式为：</p>
+
+<pre>HTTP/1.1 200 OK         协议/版本号 状态码 状态码短消息
+Content-Type:text/html  标题行
+Header2:...
+...
+HeaderN:...
+                                   空白行
+&lt;!doctype ..&gt;                消息主体（可选）
+&lt;html&gt;
+...
+&lt;/html&gt;
+</pre>
+
+<h5>状态码含义</h5>
+
+<table class="table">
+  <tbody><tr>
+    <th align="left" style="width:10%">代码</th>
+    <th align="left" style="width:30%">消息</th>
+    <th align="left" style="width:60%">描述</th>
+  </tr>
+  <tr>
+    <td valign="top">100</td><td> Continue</td>
+    <td valign="top">只有请求的一部分已经被服务器接收，但只要它没有被拒绝，客户端应继续该请求。</td>
+  </tr>
+  <tr>
+    <td valign="top">101</td><td> Switching Protocols</td>
+    <td valign="top">服务器切换协议。</td>
+  </tr>
+  <tr>
+    <td valign="top">200</td><td> OK</td>
+    <td valign="top">请求成功。</td>
+  </tr>
+  <tr>
+    <td valign="top">201</td><td> Created</td>
+    <td valign="top">该请求是完整的，并创建一个新的资源。</td>
+  </tr>
+  <tr>
+    <td valign="top">202</td><td> Accepted</td>
+    <td valign="top">该请求被接受处理，但是该处理是不完整的。</td>
+  </tr>
+  <tr>
+    <td valign="top">203</td><td> Non-authoritative Information</td>
+    <td valign="top">&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">204 </td><td>No Content</td>
+    <td valign="top">&nbsp; </td>
+  </tr>
+  <tr>
+    <td valign="top">205</td><td> Reset Content</td>
+    <td valign="top">&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">206</td><td> Partial Content</td>
+    <td valign="top">&nbsp; </td>
+  </tr>
+  <tr>
+    <td valign="top">300</td><td> Multiple Choices</td>
+    <td valign="top">链接列表。用户可以选择一个链接，进入到该位置。最多五个地址。</td>
+  </tr>
+  <tr>
+    <td valign="top">301</td><td> Moved Permanently</td>
+    <td valign="top">所请求的页面已经转移到一个新的 URL。</td>
+  </tr>
+  <tr>
+    <td valign="top">302</td><td> Found</td>
+    <td valign="top">所请求的页面已经临时转移到一个新的 URL。
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">303</td><td> See Other</td>
+    <td valign="top">所请求的页面可以在另一个不同的 URL 下被找到。
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">304</td><td> Not Modified</td>
+    <td valign="top">&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">305</td><td> Use Proxy</td>
+    <td valign="top">&nbsp;
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">306</td><td> <i>Unused</i></td>
+
+    <td valign="top">在以前的版本中使用该代码。现在已不再使用它，但代码仍被保留。</td>
+  </tr>
+  <tr>
+    <td valign="top">307</td><td> Temporary Redirect</td>
+    <td valign="top">所请求的页面已经临时转移到一个新的 URL。</td>
+  </tr>
+   <tr>
+    <td valign="top">400</td><td>Bad Request</td>
+    <td valign="top">服务器不理解请求。</td>
+  </tr>
+  <tr>
+    <td valign="top">401</td><td> Unauthorized</td>
+    <td valign="top">所请求的页面需要用户名和密码。</td>
+  </tr>
+  <tr>
+    <td valign="top">402</td><td> Payment Required</td>
+    <td valign="top"><i>您还不能使用该代码。</i> </td>
+  </tr>
+  <tr>
+    <td valign="top">403</td><td> Forbidden</td>
+    <td valign="top">禁止访问所请求的页面。</td>
+  </tr>
+  <tr>
+    <td valign="top">404</td><td> Not Found</td>
+    <td valign="top">服务器无法找到所请求的页面。.</td>
+  </tr>
+  <tr>
+    <td valign="top">405</td><td> Method Not Allowed</td> 
+    <td valign="top">在请求中指定的方法是不允许的。</td>
+  </tr>
+  <tr>
+    <td valign="top">406</td><td> Not Acceptable</td>
+    <td valign="top">服务器只生成一个不被客户端接受的响应。</td>
+  </tr>
+  <tr>
+    <td valign="top">407 </td><td>Proxy Authentication Required</td>
+    <td valign="top">在请求送达之前，您必须使用代理服务器的验证。</td>
+  </tr>
+  <tr>
+    <td valign="top">408</td><td> Request Timeout</td>
+    <td valign="top">请求需要的时间比服务器能够等待的时间长，超时。</td>
+  </tr>
+  <tr>
+    <td valign="top">409</td><td> Conflict</td>
+    <td valign="top">请求因为冲突无法完成。</td>
+  </tr>
+  <tr>
+    <td valign="top">410 </td><td>Gone</td>
+    <td valign="top">所请求的页面不再可用。</td>
+  </tr>
+  <tr>
+    <td valign="top">411</td><td> Length Required</td>
+    <td valign="top">"Content-Length" 未定义。服务器无法处理客户端发送的不带 Content-Length 的请求信息。</td>
+  </tr>
+  <tr>
+    <td valign="top">412</td><td> Precondition Failed</td>
+    <td valign="top">请求中给出的先决条件被服务器评估为 false。</td>
+  </tr>
+  <tr>
+    <td valign="top">413</td><td> Request Entity Too Large</td>
+    <td valign="top">服务器不接受该请求，因为请求实体过大。</td>
+  </tr>
+  <tr>
+    <td valign="top">414</td><td> Request-url Too Long</td>
+    <td valign="top">服务器不接受该请求，因为 URL 太长。当您转换一个 "post" 请求为一个带有长的查询信息的 "get" 请求时发生。</td>
+  </tr>
+  <tr>
+    <td valign="top">415</td><td> Unsupported Media Type</td>
+    <td valign="top">服务器不接受该请求，因为媒体类型不被支持。</td>
+  </tr>
+  <tr>
+    <td valign="top">417</td><td> Expectation Failed</td>
+    <td valign="top">&nbsp;</td> 
+  </tr>
+  <tr>
+    <td valign="top">500</td><td>Internal Server Error</td>
+    <td valign="top">未完成的请求。服务器遇到了一个意外的情况。</td>
+  </tr>
+  <tr>
+    <td valign="top">501</td><td> Not Implemented</td>
+    <td valign="top">未完成的请求。服务器不支持所需的功能。</td>
+  </tr>
+  <tr>
+    <td valign="top">502</td><td> Bad Gateway</td>
+    <td valign="top">未完成的请求。服务器从上游服务器收到无效响应。</td>
+  </tr>
+  <tr>
+    <td valign="top">503</td><td> Service Unavailable</td>
+    <td valign="top">未完成的请求。服务器暂时超载或死机。</td>
+  </tr>
+  <tr>
+    <td valign="top">504</td><td> Gateway Timeout</td>
+    <td valign="top">网关超时。</td>
+  </tr>
+  <tr>
+    <td valign="top">505</td><td> HTTP Version Not Supported</td>
+    <td valign="top">服务器不支持"HTTP协议"版本。</td>
+  </tr>
+</tbody></table>
+
+<h5>设置HTTP状态码</h5>
+
+<p>HttpServletResponse对象提供了设置HTTP状态码的方法</p>
+
+<pre>public void setStatus ( int statusCode )
+该方法设置一个任意的状态码。setStatus 方法接受一个 int（状态码）作为参数。
+若包含了一个特殊的状态码和文档，要在使用 PrintWriter 实际返回任何内容
+之前调用 setStatus。
+public void sendRedirect(String url)
+该方法生成一个 302 响应，连同一个带有新文档 URL 的 Location 头。
+public void sendError(int code, String message)
+该方法发送一个状态码（通常为 404），连同一个在 HTML 文档内部自动格式化
+并发送到客户端的短消息
+</pre>
+
+<h5>状态码实例</h5>
+
+<pre>@WebServlet(name="errorServlet", urlPatterns = "/errorHttp")
+public class ErrorServlet extends HttpServlet {
+    public void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        response.sendError(407, "need authentication");
+    }
+}
+</pre>
+
+<p>运行一下： <br>
+<img class="img" src="../img/image009.png"> <br>
+但是，这样直接显示错误提示是非常不友好的，需要将错误跳转好更加友好的展示页面。</p>
+
+<h5>Servlet异常处理</h5>
+
+<p>当一个Servlet抛出一个异常时，Web容器使用在web.xml中配置的exception-type元素的异常类型进行处置。 <br>
+配置一个使用ErrorHandler的Servlet处理异常状态的web.xml</p>
+
+<pre>&lt;web-app&gt;
+    &lt;error-page&gt;
+        &lt;location&gt;/errorHandler
+    &lt;/error-page&gt;
+&lt;/web-app&gt;
+</pre>
+
+<p>需要注意的是，对于servlet 3.0来说，error-page不再需要配置error-code或者exception-type，而是只能配置一个location，所有的错误都将交由这个location所指向的url来处理。 <br>
+那么，在添加一个能够处理/errorHandler的servler，</p>
+
+<pre>@WebServlet(name="errorHandler", urlPatterns = {"/errorHandler"})
+public class ErrorHandler extends HttpServlet {
+    public void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        Throwable throwable = (Throwable)request.getAttribute("javax.servlet.error.exception");
+        Integer statusCode = (Integer)request.getAttribute("javax.servlet.error.status_code");
+        String servletName = (String)request.getAttribute("javax.servlet.error.servlet_name");
+        if(servletName == null){
+            servletName = "unKnown";
+        }
+        String requestUrl = (String)request.getAttribute("javax.servlet.error.request_uri");
+        if(requestUrl == null){
+            requestUrl = "unKnown";
+        }
+        response.setContentType("text/html;charset=UTF-8");
+        PrintWriter pw = response.getWriter();
+        pw.append("&lt;html&gt;&lt;head&gt;&lt;title&gt;servlet error&lt;/title&gt;&lt;/head&gt;")
+          .append("&lt;body&gt;")
+          .append("code-&gt;").append(statusCode.toString()).append("<br>")
+                .append("name-&gt;").append(servletName).append("<br>")
+                .append("request-&gt;").append(requestUrl).append("<br>")
+                .append("error-&gt;").append(throwable.getMessage())
+                .append("&lt;/body&gt;&lt;/html&gt;");
+        pw.flush();
+        pw.close();
+    }
+}
+</pre>
+
+<p>那么，再运行一下<a href="http://localhost:8080/errorHttp">http://localhost:8080/errorHttp</a> <br>
+<img class="img" src="../img/image010.png"> <br>
+servlet处理的错误属性，有以下几个：</p>
+
+<table class="table">
+<tbody><tr><th>属性 &amp; 描述</th></tr>
+<tr><td><b>javax.servlet.error.status_code</b><br>该属性给出状态码，状态码可被存储，并在存储为 java.lang.Integer 数据类型后可被分析。</td></tr>
+<tr><td><b>javax.servlet.error.exception_type</b><br>该属性给出异常类型的信息，异常类型可被存储，并在存储为 java.lang.Class 数据类型后可被分析。</td></tr>
+<tr><td><b>javax.servlet.error.message</b><br>该属性给出确切错误消息的信息，信息可被存储，并在存储为 java.lang.String 数据类型后可被分析。</td></tr>
+<tr><td><b>javax.servlet.error.request_uri</b><br>该属性给出有关 URL 调用 Servlet 的信息，信息可被存储，并在存储为 java.lang.String 数据类型后可被分析。</td></tr>
+<tr><td><b>javax.servlet.error.exception</b><br>该属性给出异常产生的信息，信息可被存储，并在存储为 java.lang.Throwable 数据类型后可被分析。</td></tr>
+<tr><td><b>javax.servlet.error.servlet_name</b><br>该属性给出 Servlet 的名称，名称可被存储，并在存储为 java.lang.String 数据类型后可被分析。</td></tr>
+</tbody></table>
+
+<h4>总结</h4>
+
+<p>有了响应状态码，我们能够很快的分析我们请求是否成功，出错的原因是什么，而servlet的异常处理，又可以以友好的方式将异常展示给用户。<span class="diff"></span></p></div>
+</div>
+            </div>
+        </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="copyright text-muted">Copyright &copy; Ting Blog 2017</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/tether.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="../js/clean-blog.js"></script>
+
+</body>
+
+</html>

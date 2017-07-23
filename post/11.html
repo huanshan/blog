@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ting Blog</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../css/clean-blog.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+    <!-- Temporary navbar container fix -->
+    <style>
+    .navbar-toggler {
+        z-index: 1;
+    }
+    
+    @media (max-width: 576px) {
+        nav > .container {
+            width: 100%;
+        }
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed-top navbar-toggleable-md navbar-light" id="mainNav">
+        <div class="container">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu <i class="fa fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../post.html">文章</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('../img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <div class="post-heading">
+                        <h3>Java内存模型--运行时数据区的方法区</h3>
+                        <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
+                        <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+<div id="md-preview">
+
+<p>在java虚拟机中，装载的类型信息存储在方法区的内存中，当虚拟机装载类时，它使用的类装载器定位响应的class文件，然后读入这个二进制数据流的class文件，传输到虚拟机中，虚拟机会提取其中的类型信息，并将这些信息存储到方法区，类中的类常量（静态变量）也存储到方法区；</p>
+
+<h5>类型信息</h5>
+
+<p>当虚拟机运行java程序时，会查找存储在方法区的类型信息，这些类型信息包括：</p>
+
+<blockquote>
+  <p>类型的全限定名； <br>
+  类型的直接超累的全限定名（Object没有超类）； <br>
+  类型是类类型还是接口类型； <br>
+  类型的访问修饰符； <br>
+  任何直接超接口的全限定名的有序列表；</p>
+</blockquote>
+
+<p>在 Java class文件和虚拟机中，类型名总是以全限定名出现，在java源代码中，全限定名由类所属包的名称加上一个"."，再加上类名组成，在class文件中，所有的"."都被斜杠"/"代替，例如java.lang.Object就变为了java/lang/Object。 <br>
+除了基本类型信息外，虚拟机还未每个被装载的类型存储以下信息：</p>
+
+<blockquote>
+  <p>该类型的常量池； <br>
+  字段信息； <br>
+  方法信息； <br>
+  除了常量以外的所有类变量（静态变量）； <br>
+  一个类到ClassLoader的引用； <br>
+  一个到Class类的引用；</p>
+</blockquote>
+
+<h5>常量池</h5>
+
+<p>虚拟机为每个被加载的类型维护一个常量池，是该类型所用常量的一个有序集合，包括直接常量（String，Integer 和浮点型）和其它类型，字段和方法的符号引用。池中的数据项就像数组一样是通过索引访问的。</p>
+
+<h5>字段信息</h5>
+
+<p>对于类型中声明的每一个字段，方法区中必须保存下面的信息：</p>
+
+<blockquote>
+  <p>字段名 <br>
+  字段的类型 <br>
+  字段的修饰符（public, private, protected, static, final, volatile, transient的某个子集）</p>
+</blockquote>
+
+<h5>方法信息</h5>
+
+<p>对于类型中声明的每一个方法，方法区中必须保存下面的信息：</p>
+
+<blockquote>
+  <p>方法名 <br>
+  方法的返回类型（或者void） <br>
+  方法参数的数量和类型（按声明顺序） <br>
+  方法的修饰符</p>
+</blockquote>
+
+<p>如果某个方法不是抽象的和本地的，方法区还得保存以下信息：</p>
+
+<blockquote>
+  <p>方法的字节码 <br>
+  操作数栈和该方法的栈帧中的局部变量区的大小 <br>
+  异常表</p>
+</blockquote>
+
+<h5>类（静态）变量</h5>
+
+<p>类变量是由所有的类实例共享的，而且，即使没有任何实例，它也可以被直接访问，它只与类有关，因此它们总是作为类型信息的一部分而存储在方法区。除了在类中声明的编译时常量外，虚拟机在使用某个类之前，必须在方法区中为这些类变量分配空间。 <br>
+编译时常量是指使用final声明的用编译时已知的值初始化的类变量，和一般的类变量的处理方式不同，每个使用编译时常量的类型都会复制它的所有常量到自己的常量池中，或嵌入到它的字节码流中。作为常量池或者字节码流的一部分，编译时常量保存在方法区中。</p>
+
+<h5>指向ClassLoader类的引用</h5>
+
+<p>每个类型被加载的时候，虚拟机必须跟踪它是由启动类装载器还是用户自定义装载器进行装载的，如果用户是用自定义装载器装载的，那么虚拟机必须在类型信息中存储对该类型装载器的引用。虚拟机会在加载当前类型中引用的其它类型时使用。</p>
+
+<h5>指向Class类的引用</h5>
+
+<p>对于每一个被加载的类型，不管是类还是接口，虚拟机都会相应的为它创建一个java.lang.Class类的实例，而且，虚拟机还会以某种 方式将这个实例与方法区中的类型数据关联起来。</p>
+
+<h5>方法表</h5>
+
+<p>虚拟机对每个装载的非抽象类都生成一个方法表，把它作为类型信息的一部分存在方法区，方法表是一个数组，它的元素是所有它的实例可能被调用的实例方法的直接引用，包括哪些从超类继承过来的实例方法。运行时，可以通过方法表快速的搜寻在对象中调用的实例方法。</p>
+
+<h4>总结</h4>
+
+<p>虚拟机在加载class文件时，会把类型信息都保存到方法区，供所有的线程访问使用。<span class="diff"></span></p></div>
+</div>
+            </div>
+        </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="copyright text-muted">Copyright &copy; Ting Blog 2017</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/tether.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="../js/clean-blog.js"></script>
+
+</body>
+
+</html>
