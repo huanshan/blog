@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ting Blog</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../css/clean-blog.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+    <!-- Temporary navbar container fix -->
+    <style>
+    .navbar-toggler {
+        z-index: 1;
+    }
+    
+    @media (max-width: 576px) {
+        nav > .container {
+            width: 100%;
+        }
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed-top navbar-toggleable-md navbar-light" id="mainNav">
+        <div class="container">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu <i class="fa fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../post.html">文章</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('../img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <div class="post-heading">
+                        <h3>Java虚拟机--关于引用</h3>
+                        <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
+                        <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+<div id="md-preview" >
+
+<p>在JDK1.2后，java对引用类型进行了扩充，引入了4中引用类型。</p>
+
+<h5>强引用(StrongReference)</h5>
+
+<p>强引用是在java程序代码中普遍存在的，如果对象是一个强引用，那么垃圾回收器不会回收它。</p>
+
+<pre>Object o = new Object(); 
+</pre>
+
+<p>这是一个最普遍的强引用，当内存空间不足时，Java虚拟机会抛出OutOfMemroryError的错误，也不会回收强引用。 <br>
+如果不在使用时，可以通过将引用置空的方式来弱化引用。</p>
+
+<pre>o = null;
+</pre>
+
+<p>显式的设置o为null，或者超出了对象的生命周期范围（使用该引用的方法已经结束），则gc认为该对象不存在引用，这个时候垃圾回收器就可以回收该引用所占的内存了。 <br>
+如果强引用是一个全局变量时，就需要在不用这个对象时赋值为null，否则垃圾收集器都不会回收该引用。 <br>
+例如，ArrayList的clear方法：</p>
+
+<pre>private transient Object[] elementData; //存放元素的数组
+public void clear(){
+        modCount++;
+
+    // Let gc do its work
+    for (int i = 0; i &lt; size; i++)
+        elementData[i] = null;
+
+    size = 0;
+}
+</pre>
+
+<p>该方法将ArrayList内存放元素的数组elementData的每个值都赋值为null，这样可以及时的释放数组元素中引用的内存，不直接将elementData赋值为null的原因是避免继续掉add()等方法添加元素时，进行重新的申请内存。</p>
+
+<h5>软引用(SoftReference)</h5>
+
+<p>软引用用来描述一些还有用但是非必需的对象，对于软引用关联着的对象，在系统将要发生内存溢出异常之前，将会被这些对象列进回收范围之中，进行第二次回收，如果回收后还没有足够的内存，才会抛出内存溢出异常。Java提供了java.lang.ref.SoftReference类来实现软引用。</p>
+
+<pre>String str  = new String("hello world");
+SoftReference<string> sf = new SoftReference&lt;&gt;(str);
+</string></pre>
+
+<p>当内存不足时，垃圾回收器才会收回sf的内存。 <br>
+软引用可以用来实现内存敏感的高速缓存，举个例子，浏览器的回退按钮。按后退时，这时候显示的网页如果需要重新计算，那么效率会比较慢，如果使用缓存，那么响应就非常的快。但是，如果为所有的浏览历史添加强引用的缓存，那么会大大增加内存的浪费，甚至会造成内存溢出。 <br>
+这个时候可以使用软引用。</p>
+
+<pre>   WebPage pre = new WebPage();
+   SoftReference<webpage> sr = new SoftReference&lt;&gt;(pre);
+   if(sr.get() != null){
+       return (WebPage) sr.get();
+   } else {
+       pre = new WebPage();
+       sr = new SoftReference&lt;&gt;(pre);  
+   }
+</webpage></pre>
+
+<p>软引用可以和一个引用队列（ReferenceQueue）联合使用，如果软引用所引用的对象被垃圾回收器收回，Java虚拟机就会把这个软引用加入到与之关联的引用队列中。</p>
+
+<h5>弱引用（Weak Reference）</h5>
+
+<p>弱引用也是用来描述非必需的对象的，但是它的强度比软引用更弱一些。被弱引用关联的对象只能生存到下一次垃圾收集发生之前。不过，由于垃圾收集器是一个优先级很低的线程，因此不一定会很快的发现那些只具有弱引用的对象。弱引用可以通过java提供的java.lang.ref.WeakReference来实现。</p>
+
+<pre>Integer count = new Integer(1);
+WeakReference<integer> cw = new WeakReference&lt;&gt;(count);
+</integer></pre>
+
+<p>当发生GC操作时，count ， cw会被回收； <br>
+如果这个对象只是偶尔的使用，但是希望在使用的时候随时能获取到，并且不影响此对象的垃圾收集，那么应该使用弱引用来引用此对象。</p>
+
+<pre>Integer cc = <integer>cw.get();
+</integer></pre>
+
+<p>这句代码，会将count再次编程一个强引用。 <br>
+弱引用可以和一个引用队列（Reference Queue）联合使用，如果弱引用所引用的对象被垃圾回收，Java虚拟机会将这个弱引用加入到与之关联的引用队列中。</p>
+
+<h5>虚引用（PhantomReference）</h5>
+
+<p>虚引用也被称为幽灵引用或者幻影引用，是最弱的一种引用关系。一个对象是否有虚引用的存在，完全不会对其生存时间构成影响，也无法通过虚引用来取得一个对象实例。为一个对象设置虚引用关联的唯一目的就是能在这个对象被收集器回收时收到一个系统通知。</p>
+
+<h5>总结</h5>
+
+<p>java中的四种引用，强引用，软引用，弱引用和虚引用，引用强度递减，堆GC的敏感递增。<span class="diff"></span></p></div>
+</div>
+            </div>
+        </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="copyright text-muted">Copyright &copy; Ting Blog 2017</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/tether.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="../js/clean-blog.js"></script>
+
+</body>
+
+</html>
