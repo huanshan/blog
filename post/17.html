@@ -73,15 +73,15 @@
                 <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
 <div id="md-preview" >
 
-<p>ArrayList是接口List的实现类，它是一个可变数组，实现了List的所有操作。ArrayList接口所有的类型的元素，包括null。 <br>
+<p>ArrayList是接口List的实现类，它是一个可变数组，实现了List的所有操作。ArrayList接口所有的类型的元素，包括null。 
 该类与Vector基本类似，但是它不是线程安全的。 <br>
-对于ArrayList对象来说，其size, isEmpty, get, set, iterator，listIterator方法消耗都是常量级别。add操作的耗时为O(n)级别， <br>
+对于ArrayList对象来说，其size, isEmpty, get, set, iterator，listIterator方法消耗都是常量级别。add操作的耗时为O(n)级别， 
 其它的所有操作耗时都是线性的。 <br>
-每个ArrayList实例都有一个容量，这个容量是内部存储元素的数组的长度，数组的长度至少都是ArrayList的size。当调用 <br>
-add方法添加一个新的元素时，数组的容量会自动增长。 <br>
-再调用Add方法之前，ArrayList实例可以通过ensureCapacity()方法增大数组的容量。 <br>
-格外需要注意的是，<b>ArrayList并不是线程安全的</b>，如果多个线程同时操作一个ArrayList的实例，并且至少一个线 <br>
-程会改变这个实例的结构那么必须要进行Synchronized处理。 <br>
+每个ArrayList实例都有一个容量，这个容量是内部存储元素的数组的长度，数组的长度至少都是ArrayList的size。当调用 
+add方法添加一个新的元素时，数组的容量会自动增长。 
+再调用Add方法之前，ArrayList实例可以通过ensureCapacity()方法增大数组的容量。<br> 
+格外需要注意的是，<b>ArrayList并不是线程安全的</b>，如果多个线程同时操作一个ArrayList的实例，并且至少一个线 
+程会改变这个实例的结构那么必须要进行Synchronized处理。 
 下面，来具体分析一下ArrayList的源代码。</p>
 
 <pre>//继承了Seralizable接口，ArrayList是可序列化的和反序列化。
