@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ting Blog</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../css/clean-blog.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+    <!-- Temporary navbar container fix -->
+    <style>
+    .navbar-toggler {
+        z-index: 1;
+    }
+    
+    @media (max-width: 576px) {
+        nav > .container {
+            width: 100%;
+        }
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed-top navbar-toggleable-md navbar-light" id="mainNav">
+        <div class="container">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu <i class="fa fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../post.html">文章</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('../img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <div class="post-heading">
+                        <h3>Java集合类--ArrayList源码分析</h3>
+                        <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
+                        <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+<div id="md-preview" >
+
+<p>ArrayList是接口List的实现类，它是一个可变数组，实现了List的所有操作。ArrayList接口所有的类型的元素，包括null。 <br>
+该类与Vector基本类似，但是它不是线程安全的。 <br>
+对于ArrayList对象来说，其size, isEmpty, get, set, iterator，listIterator方法消耗都是常量级别。add操作的耗时为O(n)级别， <br>
+其它的所有操作耗时都是线性的。 <br>
+每个ArrayList实例都有一个容量，这个容量是内部存储元素的数组的长度，数组的长度至少都是ArrayList的size。当调用 <br>
+add方法添加一个新的元素时，数组的容量会自动增长。 <br>
+再调用Add方法之前，ArrayList实例可以通过ensureCapacity()方法增大数组的容量。 <br>
+格外需要注意的是，<b>ArrayList并不是线程安全的</b>，如果多个线程同时操作一个ArrayList的实例，并且至少一个线 <br>
+程会改变这个实例的结构那么必须要进行Synchronized处理。 <br>
+下面，来具体分析一下ArrayList的源代码。</p>
+
+<pre>//继承了Seralizable接口，ArrayList是可序列化的和反序列化。
+public class ArrayList<e> extends AbstractList<e>
+        implements List<e>, RandomAccess, Cloneable, java.io.Serializable
+{
+    //默认容量是10
+    private static final int DEFAULT_CAPACITY = 10;
+
+    //空数组实例，是一个static方法
+    private static final Object[] EMPTY_ELEMENTDATA = {};
+
+    //返回一个默认大小的空数组实例，与EMPTY_ELEMENTDATA的区别在于添加第一个元素时如何进行扩容？
+    private static final Object[] DEFAULTCAPACITY_EMPTY_ELEMENTDATA = {};
+
+    //ArrayList内部的数组缓存区域，序列化时不进行序列化。
+    //ArrayList的容量就是这个数组的长度，当数组为空时，
+        //<span class="diff">elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA， 当添加元素时，长度扩充为DEFAULT_CAPACITY。
+    transient Object[] elementData;
+
+    //数组包含元素的数目
+    private int size;
+
+    //构造函数
+    public ArrayList(int initialCapacity) {
+        if (initialCapacity &gt; 0) {
+            this.elementData = new Object[initialCapacity];
+        } else if (initialCapacity == 0) {
+            //传入值为0，则等于EMPTY_ELEMENTDATA;
+            this.elementData = EMPTY_ELEMENTDATA;
+        } else {
+            throw new IllegalArgumentException("Illegal Capacity: "+
+                                               initialCapacity);
+        }
+    }
+
+    //构造一个内部数组容量为10的实例
+    public ArrayList() {
+        this.elementData = DEFAULTCAPACITY_EMPTY_ELEMENTDATA;
+    }
+
+    //根据一个collection对象构造一个实例
+    public ArrayList(Collection<!--? extends E--> c) {
+        elementData = c.toArray();
+        if ((size = elementData.length) != 0) {
+            // c.toArray 方法有可能返回的不是Object[]对象
+            if (elementData.getClass() != Object[].class)
+                elementData = Arrays.copyOf(elementData, size, Object[].class);
+        } else {
+            // 若转化为Array的size不等于length，则替换成空数组
+            this.elementData = EMPTY_ELEMENTDATA;
+        }
+    }
+
+    //根据数组的size，整理数组元素，使elementData中只有size个元素
+    public void trimToSize() {
+        modCount++;
+        if (size &lt; elementData.length) {
+            elementData = (size == 0)
+              ? EMPTY_ELEMENTDATA
+              : Arrays.copyOf(elementData, size);
+        }
+    }
+
+    //扩展数组容量
+    //<b>new ArrayList(0) 构造的实例</b>
+    public void ensureCapacity(int minCapacity) {
+        //若elementData是空数组，最小扩展数为10个，否则最小扩展数为0；
+        int minExpand = (elementData != DEFAULTCAPACITY_EMPTY_ELEMENTDATA)
+            ? 0
+            : DEFAULT_CAPACITY;
+        //扩展数大于最小扩展数，进行扩展
+        if (minCapacity &gt; minExpand) {
+            ensureExplicitCapacity(minCapacity);
+        }
+    }
+
+    //若数组elelmentData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA，
+    //扩充DEFAULT_CAPACITY与minCapacity的最大值
+    //私有方法
+    private void ensureCapacityInternal(int minCapacity) {
+        if (elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA) {
+            minCapacity = Math.max(DEFAULT_CAPACITY, minCapacity);
+        }
+
+        ensureExplicitCapacity(minCapacity);
+    }
+
+    //扩容操作，调用grow方法
+    private void ensureExplicitCapacity(int minCapacity) {
+        modCount++;
+
+        // overflow-conscious code
+        if (minCapacity - elementData.length &gt; 0)
+            grow(minCapacity);
+    }
+
+    //最大扩展容量
+    private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
+
+    //扩容方法
+    //最大容量为Integer.MAX_VALUE - 8
+    private void grow(int minCapacity) {
+
+        int oldCapacity = elementData.length;
+        //原来是int newCapacity = (oldCapacity * 3)/2 + 1;
+        //现在是
+        //新容量=就容量+旧容量/2
+        int newCapacity = oldCapacity + (oldCapacity &gt;&gt; 1);
+        //至少扩容为原来的1.5倍
+        if (newCapacity - minCapacity &lt; 0)
+            newCapacity = minCapacity;
+        if (newCapacity - MAX_ARRAY_SIZE &gt; 0)
+            newCapacity = hugeCapacity(minCapacity);
+
+        elementData = Arrays.copyOf(elementData, newCapacity);
+    }
+
+    private static int hugeCapacity(int minCapacity) {
+        if (minCapacity &lt; 0) // overflow
+            throw new OutOfMemoryError();
+        return (minCapacity &gt; MAX_ARRAY_SIZE) ?
+            Integer.MAX_VALUE :
+            MAX_ARRAY_SIZE;
+    }
+
+    //返回数组大小
+    //<b>是一个内部计数值，不是elementData.length</b>
+    public int size() {
+        return size;
+    }
+
+    //数组是否为空
+    public boolean isEmpty() {
+        return size == 0;
+    }
+
+    //数组是否包含元素o
+    public boolean contains(Object o) {
+        return indexOf(o) &gt;= 0;
+    }
+
+    //元素o在数组中第一次出现的位置
+    //需要遍历内部数组（只遍历size个）
+    public int indexOf(Object o) {
+        if (o == null) {
+            for (int i = 0; i &lt; size; i++)
+                if (elementData[i]==null)
+                    return i;
+        } else {
+            for (int i = 0; i &lt; size; i++)
+                if (o.equals(elementData[i]))
+                    return i;
+        }
+        return -1;
+    }
+
+    //元素o在数组中最后一次出现的位置
+    //倒叙遍历数组，从第size-1个开始
+    public int lastIndexOf(Object o) {
+        if (o == null) {
+            for (int i = size-1; i &gt;= 0; i--)
+                if (elementData[i]==null)
+                    return i;
+        } else {
+            for (int i = size-1; i &gt;= 0; i--)
+                if (o.equals(elementData[i]))
+                    return i;
+        }
+        return -1;
+    }
+
+    //数组的clone方法，返回的是一个<b>新的数组</b>
+    public Object clone() {
+        try {
+            ArrayList<!--?--> v = (ArrayList<!--?-->) super.clone();
+            v.elementData = Arrays.copyOf(elementData, size);
+            v.modCount = 0;
+            return v;
+        } catch (CloneNotSupportedException e) {
+            // this shouldn't happen, since we are Cloneable
+            //哈哈，哪里都会写不会发生的事的处理方法，受迫害妄想症
+            throw new InternalError(e);
+        }
+    }
+
+    //返回一个原始数组（不直接返回elementData）
+    public Object[] toArray() {
+        return Arrays.copyOf(elementData, size);
+    }
+
+    //这个方法不想解释，现在还不清楚什么情况下会用
+    public <t> T[] toArray(T[] a) {
+        if (a.length &lt; size)
+            return (T[]) Arrays.copyOf(elementData, size, a.getClass());
+        System.arraycopy(elementData, 0, a, 0, size); //当前环境一直报错。。。
+        if (a.length &gt; size)
+            a[size] = null;
+        return a;
+    }
+
+    //返回elementData数组的第index个元素
+    //包内使用
+    //不进行超限检查
+    E elementData(int index) {
+        return (E) elementData[index];
+    }
+
+    //超限检测，index不能超过size
+    private void rangeCheck(int index) {
+        if (index &gt;= size)
+            throw new IndexOutOfBoundsException(outOfBoundsMsg(index));
+    }
+
+    //获取数组元素
+    //外部使用
+    public E get(int index) {
+        rangeCheck(index);
+
+        return elementData(index);
+    }
+
+    //设置元素第index位置的值
+    //返回当前值
+    public E set(int index, E element) {
+        rangeCheck(index);
+
+        E oldValue = elementData(index);
+        elementData[index] = element;
+        return oldValue;
+    }
+
+    //添加元素，进行扩容
+    public boolean add(E e) {
+        ensureCapacityInternal(size + 1);
+        elementData[size++] = e;
+        return true;
+    }
+
+    //添加操作超限检查
+    private void rangeCheckForAdd(int index) {
+        if (index &gt; size || index &lt; 0)
+            throw new IndexOutOfBoundsException(outOfBoundsMsg(index));
+    }
+
+    //在第index个位置插入元素element
+    public void add(int index, E element) {
+        rangeCheckForAdd(index);
+
+        ensureCapacityInternal(size + 1);  
+        System.arraycopy(elementData, index, elementData, index + 1,
+                         size - index);
+        elementData[index] = element;
+        size++;
+    }
+
+    //删除数组第index位置的元素
+    public E remove(int index) {
+        rangeCheck(index);
+
+        modCount++;
+        E oldValue = elementData(index);
+
+        int numMoved = size - index - 1;
+        if (numMoved &gt; 0)
+            System.arraycopy(elementData, index+1, elementData, index,
+                             numMoved);
+        //最后一个元素置为null，GC在下次垃圾回收时清空
+        elementData[--size] = null; 
+
+        return oldValue;
+    }
+
+    //内部函数，忽略边界校验
+    private void fastRemove(int index) {
+        modCount++;
+        int numMoved = size - index - 1;
+        if (numMoved &gt; 0)
+            System.arraycopy(elementData, index+1, elementData, index,
+                             numMoved);
+        elementData[--size] = null; // clear to let GC do its work
+    }
+
+    //清空数组元素
+    public void clear() {
+        modCount++;
+
+        // 只是把element所有的元素设置为null,
+        // 不回收elementData，避免添加元素时重新申请内存
+        for (int i = 0; i &lt; size; i++)
+            elementData[i] = null;
+
+        size = 0;
+    }
+
+    //添加一个数组
+    public boolean addAll(Collection<!--? extends E--> c) {
+        Object[] a = c.toArray();
+        int numNew = a.length;
+        ensureCapacityInternal(size + numNew); 
+        System.arraycopy(a, 0, elementData, size, numNew);
+        size += numNew;
+        return numNew != 0;
+    }
+
+    //添加一个数组到index位置，先扩容，后移位
+    public boolean addAll(int index, Collection<!--? extends E--> c) {
+        rangeCheckForAdd(index);
+
+        Object[] a = c.toArray();
+        int numNew = a.length;
+        ensureCapacityInternal(size + numNew); 
+
+        int numMoved = size - index;
+        if (numMoved &gt; 0)
+            System.arraycopy(elementData, index, elementData, index + numNew,
+                             numMoved);
+
+        System.arraycopy(a, 0, elementData, index, numNew);
+        size += numNew;
+        return numNew != 0;
+    }
+
+    //删除区间内的元素，from 可以大于 to
+    protected void removeRange(int fromIndex, int toIndex) {
+        modCount++;
+        int numMoved = size - toIndex;
+        System.arraycopy(elementData, toIndex, elementData, fromIndex,
+                         numMoved);
+
+        int newSize = size - (toIndex-fromIndex);
+        for (int i = newSize; i &lt; size; i++) {
+            elementData[i] = null;
+        }
+        size = newSize;
+    }
+
+    //内部方法，越界提示
+    private String outOfBoundsMsg(int index) {
+        return "Index: "+index+", Size: "+size;
+    }
+
+    //删除集合c内的所有元素
+    public boolean removeAll(Collection<!--?--> c) {
+        Objects.requireNonNull(c);
+        return batchRemove(c, false);
+    }
+
+    //返回与集合c的交集
+    public boolean retainAll(Collection<!--?--> c) {
+        Objects.requireNonNull(c);
+        return batchRemove(c, true);
+    }
+
+    //批量修改数组元素
+    private boolean batchRemove(Collection<!--?--> c, boolean complement) {
+        final Object[] elementData = this.elementData;
+        int r = 0, w = 0;
+        boolean modified = false;
+        try {
+            for (; r &lt; size; r++)
+                if (c.contains(elementData[r]) == complement) //漂亮！！
+                    elementData[w++] = elementData[r];
+        } finally {
+            //调整数组
+            if (r != size) {
+                System.arraycopy(elementData, r,
+                                 elementData, w,
+                                 size - r);
+                w += size - r;
+            }
+            if (w != size) {
+                for (int i = w; i &lt; size; i++)
+                    elementData[i] = null;
+                modCount += size - w;
+                size = w;
+                modified = true;
+            }
+        }
+        return modified;
+    }
+
+    //内部方法，输出数组内部值到指定io
+    private void writeObject(java.io.ObjectOutputStream s)
+        throws java.io.IOException{
+        int expectedModCount = modCount;
+        s.defaultWriteObject();
+
+        s.writeInt(size);
+
+        // Write out all elements in the proper order.
+        for (int i=0; i<size; i++)="" {="" s.writeobject(elementdata[i]);="" }="" if="" (modcount="" !="expectedModCount)" throw="" new="" concurrentmodificationexception();="" 内部方法，从指定io读入="" private="" void="" readobject(java.io.objectinputstream="" s)="" throws="" java.io.ioexception,="" classnotfoundexception="" elementdata="EMPTY_ELEMENTDATA;" s.defaultreadobject();="" s.readint();="" 不能输入到一个空数组中="" (size=""> 0) {
+            ensureCapacityInternal(size);
+
+            Object[] a = elementData;
+            for (int i=0; i<size; i++)="" {="" a[i]="s.readObject();" }="" 返回index开始的listiterator实例="" public="" listiterator<e=""> listIterator(int index) {
+        if (index &lt; 0 || index &gt; size)
+            throw new IndexOutOfBoundsException("Index: "+index);
+        return new ListItr(index);
+    }
+
+    //返回完整的ListIterator实例
+    public ListIterator<e> listIterator() {
+        return new ListItr(0);
+    }
+    //返回Iterator实例
+    public Iterator<e> iterator() {
+        return new Itr();//内部类，不再贴出
+    }
+
+    //截取操作越界校验
+    static void subListRangeCheck(int fromIndex, int toIndex, int size) {
+        if (fromIndex &lt; 0)
+            throw new IndexOutOfBoundsException("fromIndex = " + fromIndex);
+        if (toIndex &gt; size)
+            throw new IndexOutOfBoundsException("toIndex = " + toIndex);
+        if (fromIndex &gt; toIndex)
+            throw new IllegalArgumentException("fromIndex(" + fromIndex +
+                                               ") &gt; toIndex(" + toIndex + ")");
+    }
+    //截取元素构造新数组
+    public List<e> subList(int fromIndex, int toIndex) {
+        subListRangeCheck(fromIndex, toIndex, size);
+        return new SubList(this, 0, fromIndex, toIndex);//SubList内部类
+    }
+
+    //since 1.8
+    //对数组的每个元素执行action操作，action不能为空
+    public void forEach(Consumer<!--? super E--> action) {
+        Objects.requireNonNull(action);
+        final int expectedModCount = modCount;
+        @SuppressWarnings("unchecked")
+        final E[] elementData = (E[]) this.elementData;
+        final int size = this.size;
+        for (int i=0; modCount == expectedModCount &amp;&amp; i &lt; size; i++) {
+            action.accept(elementData[i]);
+        }
+        if (modCount != expectedModCount) {
+            throw new ConcurrentModificationException();
+        }
+    }
+
+    //since 1.8
+    public void replaceAll(UnaryOperator<e> operator) {
+        Objects.requireNonNull(operator);
+        final int expectedModCount = modCount;
+        final int size = this.size;
+        for (int i=0; modCount == expectedModCount &amp;&amp; i &lt; size; i++) {
+            elementData[i] = operator.apply((E) elementData[i]);
+        }
+        if (modCount != expectedModCount) {
+            throw new ConcurrentModificationException();
+        }
+        modCount++;
+    }
+
+    //since 1.8
+    @Override
+    @SuppressWarnings("unchecked")
+    public void sort(Comparator<!--? super E--> c) {
+        final int expectedModCount = modCount;
+        Arrays.sort((E[]) elementData, 0, size, c);
+        if (modCount != expectedModCount) {
+            throw new ConcurrentModificationException();
+        }
+        modCount++;
+    }
+}   
+</e></e></e></e></size;></size;></t></span></e></e></e></pre></div>
+</div>
+        </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="copyright text-muted">Copyright &copy; Ting Blog 2017</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/tether.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="../js/clean-blog.js"></script>
+
+</body>
+
+</html>
