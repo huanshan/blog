@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ting Blog</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../css/clean-blog.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+    <!-- Temporary navbar container fix -->
+    <style>
+    .navbar-toggler {
+        z-index: 1;
+    }
+    
+    @media (max-width: 576px) {
+        nav > .container {
+            width: 100%;
+        }
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed-top navbar-toggleable-md navbar-light" id="mainNav">
+        <div class="container">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu <i class="fa fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../post.html">文章</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('../img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <div class="post-heading">
+                        <h3>Java集合--TreeMap源码分析</h3>
+                        <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
+                        <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+<div id="md-preview" >
+
+<p>TreeMap是基于红黑树的Map实现，TreeMap对其key通过进行排序。TreeMap可以引入比较器Comparator实例，若Comparator为空，则进行自然排序（此时，要求key实现Comparable接口），Comparator实例在创建TreeMap时引入。 <br>
+TreeMap对于get, put, remove, containsKey的操作复杂度都是常量级的。对于TreeMap来说，Comparator的实例选取的对比方法对于TreeMap的排序至关重要。 <br>
+TreeMap不是线性安全的，要使用一个线性安全的TreeMap，可以使用以下方法：</p>
+
+<pre> SortedMap m = Collections.synchronizedSortedMap(new TreeMap(...));
+</pre>
+
+<p>下面，看一下TreeMap的实现源码：</p>
+
+<pre>public class TreeMap&lt;K,V&gt;
+    extends AbstractMap&lt;K,V&gt;
+    implements NavigableMap&lt;K,V&gt;, Cloneable, java.io.Serializable
+{
+    //TreeMap的排序方式
+    //若为null，采用自然排序
+    private final Comparator&lt;? super K&gt; comparator;
+
+    //Tree的根节点
+    private transient Entry&lt;K,V&gt; root;
+
+    //Map的size
+    private transient int size = 0;
+
+    //构造函数
+    //无参数，comparator为空，自然排序，此时key必须实现Comparable接口；
+    public TreeMap() {
+        comparator = null;
+    }
+
+    //构造函数，引入比较器Comparator实例
+    //要求所有的key都可以通过Comparator进行比较
+    public TreeMap(Comparator&lt;? super K&gt; comparator) {
+        this.comparator = comparator;
+    }
+
+    //构造函数，通过一个Map创建
+    //要求Map的key实现Comparable接口
+    public TreeMap(Map&lt;? extends K, ? extends V&gt; m) {
+        comparator = null;
+        putAll(m);
+    }
+
+    //插入Map的所有元素，该Map必须是SortedMap实例
+    public void putAll(Map&lt;? extends K, ? extends V&gt; map) {
+        int mapSize = map.size();
+        if (size==0 &amp;&amp; mapSize!=0 &amp;&amp; map instanceof SortedMap) {
+            Comparator&lt;?&gt; c = ((SortedMap&lt;?,?&gt;)map).comparator();
+            if (c == comparator || (c != null &amp;&amp; c.equals(comparator))) {
+                ++modCount;
+                try {
+                    buildFromSorted(mapSize, map.entrySet().iterator(),
+                                    null, null);
+                } catch (java.io.IOException cannotHappen) {
+                } catch (ClassNotFoundException cannotHappen) {
+                }
+                return;
+            }
+        }
+        super.putAll(map);
+    }
+    //创建红黑树
+    private void buildFromSorted(int size, Iterator&lt;?&gt; it,
+                                 java.io.ObjectInputStream str,
+                                 V defaultVal)
+        throws  java.io.IOException, ClassNotFoundException {
+        this.size = size;
+        root = buildFromSorted(0, 0, size-1, computeRedLevel(size),
+                               it, str, defaultVal);
+    }
+
+    //创建红黑树
+    //递归构建树
+    private final Entry&lt;K,V&gt; buildFromSorted(int level, int lo, int hi,
+                                             int redLevel,
+                                             Iterator&lt;?&gt; it,
+                                             java.io.ObjectInputStream str,
+                                             V defaultVal)
+        throws  java.io.IOException, ClassNotFoundException {
+        /*
+         * Strategy: The root is the middlemost element. To get to it, we
+         * have to first recursively construct the entire left subtree,
+         * so as to grab all of its elements. We can then proceed with right
+         * subtree.
+         *
+         * The lo and hi arguments are the minimum and maximum
+         * indices to pull out of the iterator or stream for current subtree.
+         * They are not actually indexed, we just proceed sequentially,
+         * ensuring that items are extracted in corresponding order.
+         */
+
+        if (hi &lt; lo) return null;
+
+        int mid = (lo + hi) &gt;&gt;&gt; 1;
+
+        Entry&lt;K,V&gt; left  = null;
+        if (lo &lt; mid)
+            left = buildFromSorted(level+1, lo, mid - 1, redLevel,
+                                   it, str, defaultVal);
+
+        // extract key and/or value from iterator or stream
+        K key;
+        V value;
+        if (it != null) {
+            if (defaultVal==null) {
+                Map.Entry&lt;?,?&gt; entry = (Map.Entry&lt;?,?&gt;)it.next();
+                key = (K)entry.getKey();
+                value = (V)entry.getValue();
+            } else {
+                key = (K)it.next();
+                value = defaultVal;
+            }
+        } else { // use stream
+            key = (K) str.readObject();
+            value = (defaultVal != null ? defaultVal : (V) str.readObject());
+        }
+
+        Entry&lt;K,V&gt; middle =  new Entry&lt;&gt;(key, value, null);
+
+        // color nodes in non-full bottommost level red
+        if (level == redLevel)
+            middle.color = RED;
+
+        if (left != null) {
+            middle.left = left;
+            left.parent = middle;
+        }
+
+        if (mid &lt; hi) {
+            Entry&lt;K,V&gt; right = buildFromSorted(level+1, mid+1, hi, redLevel,
+                                               it, str, defaultVal);
+            middle.right = right;
+            right.parent = middle;
+        }
+
+        return middle;
+    }
+
+    //通过SortedMap创建TreeMap
+    public TreeMap(SortedMap&lt;K, ? extends V&gt; m) {
+        comparator = m.comparator();
+        try {
+            buildFromSorted(m.size(), m.entrySet().iterator(), null, null);
+        } catch (java.io.IOException cannotHappen) {
+        } catch (ClassNotFoundException cannotHappen) {
+        }
+    }
+
+    //Map中键值数目
+    public int size() {
+        return size;
+    }
+
+    //是否含有键key
+    public boolean containsKey(Object key) {
+        return getEntry(key) != null;
+    }
+
+    //遍历红黑树，寻找键为key的结点
+    final Entry&lt;K,V&gt; getEntry(Object key) {
+        if (comparator != null)
+            return getEntryUsingComparator(key);
+        if (key == null)
+            throw new NullPointerException();
+        @SuppressWarnings("unchecked")
+            Comparable&lt;? super K&gt; k = (Comparable&lt;? super K&gt;) key;
+        Entry&lt;K,V&gt; p = root;
+        while (p != null) {
+            int cmp = k.compareTo(p.key);
+            if (cmp &lt; 0)
+                p = p.left;
+            else if (cmp &gt; 0)
+                p = p.right;
+            else
+                return p;
+        }
+        return null;
+    }
+
+    //通过比较器，获取键为key的结点
+    final Entry&lt;K,V&gt; getEntryUsingComparator(Object key) {
+        @SuppressWarnings("unchecked")
+            K k = (K) key;
+        Comparator&lt;? super K&gt; cpr = comparator;
+        if (cpr != null) {
+            Entry&lt;K,V&gt; p = root;
+            while (p != null) {
+                int cmp = cpr.compare(k, p.key);
+                if (cmp &lt; 0)
+                    p = p.left;
+                else if (cmp &gt; 0)
+                    p = p.right;
+                else
+                    return p;
+            }
+        }
+        return null;
+    }
+
+    //Map中是否存在value为给定值value的结点
+    public boolean containsValue(Object value) {
+        for (Entry&lt;K,V&gt; e = getFirstEntry(); e != null; e = successor(e))
+            if (valEquals(value, e.value))
+                return true;
+        return false;
+    }
+
+    static &lt;K,V&gt; TreeMap.Entry&lt;K,V&gt; successor(Entry&lt;K,V&gt; t) {
+        if (t == null)
+            return null;
+        else if (t.right != null) {
+            Entry&lt;K,V&gt; p = t.right;
+            while (p.left != null)
+                p = p.left;
+            return p;
+        } else {
+            Entry&lt;K,V&gt; p = t.parent;
+            Entry&lt;K,V&gt; ch = t;
+            while (p != null &amp;&amp; ch == p.right) {
+                ch = p;
+                p = p.parent;
+            }
+            return p;
+        }
+    }
+
+    //获取键为key的value值
+    public V get(Object key) {
+        Entry&lt;K,V&gt; p = getEntry(key);
+        return (p==null ? null : p.value);
+    }
+
+    //获取比较器
+    public Comparator&lt;? super K&gt; comparator() {
+        return comparator;
+    }
+
+    //返回最左边的左子树叶子结点的key
+    public K firstKey() {
+        return key(getFirstEntry());
+    }
+
+    //返回最右边的右子树叶子结点的key
+    public K lastKey() {
+        return key(getLastEntry());
+    }
+
+    //获取键为key的相邻结点，
+    //返回最近比该key值大，或者相等）的结点，
+    final Entry&lt;K,V&gt; getCeilingEntry(K key) {
+        Entry&lt;K,V&gt; p = root;
+        while (p != null) {
+            int cmp = compare(key, p.key);
+            if (cmp &lt; 0) {
+                if (p.left != null)
+                    p = p.left;
+                else
+                    return p;
+            } else if (cmp &gt; 0) {
+                if (p.right != null) {
+                    p = p.right;
+                } else {
+                    Entry&lt;K,V&gt; parent = p.parent;
+                    Entry&lt;K,V&gt; ch = p;
+                    while (parent != null &amp;&amp; ch == parent.right) {
+                        ch = parent;
+                        parent = parent.parent;
+                    }
+                    return parent;
+                }
+            } else
+                return p;
+        }
+        return null;
+    }
+
+    //获取键为key的相邻结点，
+    //返回最近比该key值小或者相等的结点，
+    final Entry&lt;K,V&gt; getFloorEntry(K key) {
+        Entry&lt;K,V&gt; p = root;
+        while (p != null) {
+            int cmp = compare(key, p.key);
+            if (cmp &gt; 0) {
+                if (p.right != null)
+                    p = p.right;
+                else
+                    return p;
+            } else if (cmp &lt; 0) {
+                if (p.left != null) {
+                    p = p.left;
+                } else {
+                    Entry&lt;K,V&gt; parent = p.parent;
+                    Entry&lt;K,V&gt; ch = p;
+                    while (parent != null &amp;&amp; ch == parent.left) {
+                        ch = parent;
+                        parent = parent.parent;
+                    }
+                    return parent;
+                }
+            } else
+                return p;
+
+        }
+        return null;
+    }
+
+    //获取键为key的相邻结点，
+    //返回最近比该key值大的结点，
+    final Entry&lt;K,V&gt; getHigherEntry(K key) {
+        Entry&lt;K,V&gt; p = root;
+        while (p != null) {
+            int cmp = compare(key, p.key);
+            if (cmp &lt; 0) {
+                if (p.left != null)
+                    p = p.left;
+                else
+                    return p;
+            } else {
+                if (p.right != null) {
+                    p = p.right;
+                } else {
+                    Entry&lt;K,V&gt; parent = p.parent;
+                    Entry&lt;K,V&gt; ch = p;
+                    while (parent != null &amp;&amp; ch == parent.right) {
+                        ch = parent;
+                        parent = parent.parent;
+                    }
+                    return parent;
+                }
+            }
+        }
+        return null;
+    }
+    //获取键为key的相邻结点，
+    //返回最近比该key值小的结点，
+    final Entry&lt;K,V&gt; getLowerEntry(K key) {
+        Entry&lt;K,V&gt; p = root;
+        while (p != null) {
+            int cmp = compare(key, p.key);
+            if (cmp &gt; 0) {
+                if (p.right != null)
+                    p = p.right;
+                else
+                    return p;
+            } else {
+                if (p.left != null) {
+                    p = p.left;
+                } else {
+                    Entry&lt;K,V&gt; parent = p.parent;
+                    Entry&lt;K,V&gt; ch = p;
+                    while (parent != null &amp;&amp; ch == parent.left) {
+                        ch = parent;
+                        parent = parent.parent;
+                    }
+                    return parent;
+                }
+            }
+        }
+        return null;
+    }
+
+    //插值操作
+    public V put(K key, V value) {
+        Entry&lt;K,V&gt; t = root;
+        if (t == null) {
+            compare(key, key); 
+
+            root = new Entry&lt;&gt;(key, value, null);
+            size = 1;
+            modCount++;
+            return null;
+        }
+        int cmp;
+        Entry&lt;K,V&gt; parent;
+        Comparator&lt;? super K&gt; cpr = comparator;
+        if (cpr != null) {
+            do {
+                parent = t;
+                cmp = cpr.compare(key, t.key);
+                if (cmp &lt; 0)
+                    t = t.left;
+                else if (cmp &gt; 0)
+                    t = t.right;
+                else
+                    return t.setValue(value);
+            } while (t != null);
+        }
+        else {
+            if (key == null)
+                throw new NullPointerException();
+            @SuppressWarnings("unchecked")
+                Comparable&lt;? super K&gt; k = (Comparable&lt;? super K&gt;) key;
+            do {
+                parent = t;
+                cmp = k.compareTo(t.key);
+                if (cmp &lt; 0)
+                    t = t.left;
+                else if (cmp &gt; 0)
+                    t = t.right;
+                else
+                    return t.setValue(value);
+            } while (t != null);
+        }
+        Entry&lt;K,V&gt; e = new Entry&lt;&gt;(key, value, parent);
+        if (cmp &lt; 0)
+            parent.left = e;
+        else
+            parent.right = e;
+        fixAfterInsertion(e);
+        size++;
+        modCount++;
+        return null;
+    }
+
+    //删除map中的key关系对
+    public V remove(Object key) {
+        Entry&lt;K,V&gt; p = getEntry(key);
+        if (p == null)
+            return null;
+
+        V oldValue = p.value;
+        deleteEntry(p);
+        return oldValue;
+    }
+
+    //清除所有元素，简单粗暴，直接root=null
+    public void clear() {
+        modCount++;
+        size = 0;
+        root = null;
+    }
+
+    //clone方法
+    public Object clone() {
+        TreeMap&lt;?,?&gt; clone;
+        try {
+            clone = (TreeMap&lt;?,?&gt;) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new InternalError(e);
+        }
+
+        // Put clone into "virgin" state (except for comparator)
+        clone.root = null;
+        clone.size = 0;
+        clone.modCount = 0;
+        clone.entrySet = null;
+        clone.navigableKeySet = null;
+        clone.descendingMap = null;
+
+        // Initialize clone with our mappings
+        try {
+            clone.buildFromSorted(size, entrySet().iterator(), null, null);
+        } catch (java.io.IOException cannotHappen) {
+        } catch (ClassNotFoundException cannotHappen) {
+        }
+
+        return clone;
+    }
+
+    //首元素
+    public Map.Entry&lt;K,V&gt; firstEntry() {
+        return exportEntry(getFirstEntry());
+    }
+
+    //尾元素
+    public Map.Entry&lt;K,V&gt; lastEntry() {
+        return exportEntry(getLastEntry());
+    }
+
+    //第一个键值对
+    public Map.Entry&lt;K,V&gt; pollFirstEntry() {
+        Entry&lt;K,V&gt; p = getFirstEntry();
+        Map.Entry&lt;K,V&gt; result = exportEntry(p);
+        if (p != null)
+            deleteEntry(p);
+        return result;
+    }
+    //尾键值对
+    public Map.Entry&lt;K,V&gt; pollLastEntry() {
+        Entry&lt;K,V&gt; p = getLastEntry();
+        Map.Entry&lt;K,V&gt; result = exportEntry(p);
+        if (p != null)
+            deleteEntry(p);
+        return result;
+    }
+
+    //比指定key小的key的键值对
+    public Map.Entry&lt;K,V&gt; lowerEntry(K key) {
+        return exportEntry(getLowerEntry(key));
+    }
+    //比指定key小的key
+    public K lowerKey(K key) {
+        return keyOrNull(getLowerEntry(key));
+    }
+
+    //比指定key小的key的键值对
+    //<b>若key刚好是root结点的key，则直接返回key的键值对</b>
+    public Map.Entry&lt;K,V&gt; floorEntry(K key) {
+        return exportEntry(getFloorEntry(key));
+    }
+
+    //比指定key小的key的键
+    //<b>若key刚好是root结点的key，则直接返回key</b>
+    public K floorKey(K key) {
+        return keyOrNull(getFloorEntry(key));
+    }
+
+    //比指定key大的key的键值对
+    //<b>若key刚好是root结点的key，则直接返回key的键值对</b>
+    public Map.Entry&lt;K,V&gt; ceilingEntry(K key) {
+        return exportEntry(getCeilingEntry(key));
+    }   
+
+
+    //比指定key大的key的键
+    //<b>若key刚好是root结点的key，则直接返回key</b>
+    public K ceilingKey(K key) {
+        return keyOrNull(getCeilingEntry(key));
+    }
+
+    //比指定key大的key的键值对
+    public Map.Entry&lt;K,V&gt; higherEntry(K key) {
+        return exportEntry(getHigherEntry(key));
+    }
+
+    //比指定key大的key的键值
+    public K higherKey(K key) {
+        return keyOrNull(getHigherEntry(key));
+    }
+
+    //获取键值集合
+    public Set&lt;K&gt; keySet() {
+        return navigableKeySet();
+    }
+
+    //key集合正序
+    public NavigableSet&lt;K&gt; navigableKeySet() {
+        KeySet&lt;K&gt; nks = navigableKeySet;
+        return (nks != null) ? nks : (navigableKeySet = new KeySet&lt;&gt;(this));
+    }
+    //key集合倒序
+    public NavigableSet&lt;K&gt; descendingKeySet() {
+        return descendingMap().navigableKeySet();
+    }
+
+    //返回所有的value值
+    public Collection&lt;V&gt; values() {
+        Collection&lt;V&gt; vs = values;
+        if (vs == null) {
+            vs = new Values();
+            values = vs;
+        }
+        return vs;
+    }
+
+    //返回所有的键值关系对
+    public Set&lt;Map.Entry&lt;K,V&gt;&gt; entrySet() {
+        EntrySet es = entrySet;
+        return (es != null) ? es : (entrySet = new EntrySet());
+    }
+
+    //获取倒序map
+    public NavigableMap&lt;K, V&gt; descendingMap() {
+        NavigableMap&lt;K, V&gt; km = descendingMap;
+        return (km != null) ? km :
+            (descendingMap = new DescendingSubMap&lt;&gt;(this,
+                                                    true, null, true,
+                                                    true, null, true));
+    }
+    //关于navigableMap略过
+    ...
+
+    //key值替换
+    public boolean replace(K key, V oldValue, V newValue) {
+        Entry&lt;K,V&gt; p = getEntry(key);
+        if (p!=null &amp;&amp; Objects.equals(oldValue, p.value)) {
+            p.value = newValue;
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public V replace(K key, V value) {
+        Entry&lt;K,V&gt; p = getEntry(key);
+        if (p!=null) {
+            V oldValue = p.value;
+            p.value = value;
+            return oldValue;
+        }
+        return null;
+    }
+
+    //所有元素进行action操作
+    public void forEach(BiConsumer&lt;? super K, ? super V&gt; action) {
+        Objects.requireNonNull(action);
+        int expectedModCount = modCount;
+        for (Entry&lt;K, V&gt; e = getFirstEntry(); e != null; e = successor(e)) {
+            action.accept(e.key, e.value);
+
+            if (expectedModCount != modCount) {
+                throw new ConcurrentModificationException();
+            }
+        }
+    }
+    //since 1.8的方法略过
+
+}
+</pre><span class="diff"></span></div>
+</div>
+        </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="copyright text-muted">Copyright &copy; Ting Blog 2017</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/tether.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="../js/clean-blog.js"></script>
+
+</body>
+
+</html>

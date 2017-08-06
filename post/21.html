@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ting Blog</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../css/clean-blog.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+    <!-- Temporary navbar container fix -->
+    <style>
+    .navbar-toggler {
+        z-index: 1;
+    }
+    
+    @media (max-width: 576px) {
+        nav > .container {
+            width: 100%;
+        }
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed-top navbar-toggleable-md navbar-light" id="mainNav">
+        <div class="container">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu <i class="fa fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../post.html">文章</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('../img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <div class="post-heading">
+                        <h3>Java集合--HashSet源码分析</h3>
+                        <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
+                        <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+<div id="md-preview" >
+
+<p>HashSet是对Set接口的实现，其内部使用了一个HashMap的实例，来实现其操作。HashSet的元素可以是null. <br>
+HashSet不是线程安全的，要获取一个线程安全的HashSet，一般使用下面的方法:</p>
+
+<pre>    Set s = Collections.synchronizedSet(new HashSet(...));
+</pre>
+
+<p>下面，来看一下HashSet的源码：</p>
+
+<pre>public class HashSet&lt;E&gt;
+    extends AbstractSet&lt;E&gt;
+    implements Set&lt;E&gt;, Cloneable, java.io.Serializable
+{   
+    //采用HashMap来存储元素，在map中，元素的值就是key
+    private transient HashMap&lt;E,Object&gt; map; 
+
+    //map中，每个key值对应的value是一个Object
+    private static final Object PRESENT = new Object();
+
+    //构造函数
+    public HashSet() {
+        map = new HashMap&lt;&gt;();
+    }
+    public HashSet(Collection&lt;? extends E&gt; c) {
+        map = new HashMap&lt;&gt;(Math.max((int) (c.size()/.75f) + 1, 16));
+        addAll(c);
+    }
+    public boolean addAll(Collection&lt;? extends E&gt; c) {
+        boolean modified = false;
+        for (E e : c)
+            if (add(e))
+                modified = true;
+        return modified;
+    }
+
+    //跟HashMap一样，支持初始容量和负载因子的设置
+    public HashSet(int initialCapacity, float loadFactor) {
+        map = new HashMap&lt;&gt;(initialCapacity, loadFactor);
+    }
+
+    public HashSet(int initialCapacity) {
+        map = new HashMap&lt;&gt;(initialCapacity);
+    }
+
+    HashSet(int initialCapacity, float loadFactor, boolean dummy) {
+        map = new LinkedHashMap&lt;&gt;(initialCapacity, loadFactor);
+    }
+
+    public Iterator&lt;E&gt; iterator() {
+        return map.keySet().iterator();
+    }
+
+    public int size() {
+        return map.size();
+    }
+    public boolean isEmpty() {
+        return map.isEmpty();
+    }
+    public boolean contains(Object o) {
+        return map.containsKey(o);
+    }
+
+    //添加新元素
+    public boolean add(E e) {
+        return map.put(e, PRESENT)==null;
+    }
+
+    //删除元素
+    public boolean remove(Object o) {
+        return map.remove(o)==PRESENT;
+    }
+
+    //清理
+    public void clear() {
+        map.clear();
+    }
+
+    public Object clone() {
+        try {
+            HashSet&lt;E&gt; newSet = (HashSet&lt;E&gt;) super.clone();
+            newSet.map = (HashMap&lt;E, Object&gt;) map.clone();
+            return newSet;
+        } catch (CloneNotSupportedException e) {
+            throw new InternalError(e);
+        }
+    }
+
+    ...与io有关，spliterator略
+}
+</pre></div>
+</div>
+        </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="copyright text-muted">Copyright &copy; Ting Blog 2017</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/tether.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="../js/clean-blog.js"></script>
+
+</body>
+
+</html>

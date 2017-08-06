@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ting Blog</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../css/clean-blog.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+    <!-- Temporary navbar container fix -->
+    <style>
+    .navbar-toggler {
+        z-index: 1;
+    }
+    
+    @media (max-width: 576px) {
+        nav > .container {
+            width: 100%;
+        }
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed-top navbar-toggleable-md navbar-light" id="mainNav">
+        <div class="container">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu <i class="fa fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../post.html">文章</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('../img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <div class="post-heading">
+                        <h3>Java集合--HashMap源码分析</h3>
+                        <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
+                        <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+<div id="md-preview" >
+
+<p>HashMap是Map接口的实现，这个类封装了关于Map的操作，<b>HashMap的key和value都可以是null</b>。HashMap与HashTable基本相同，但是<b>HashMap是线程不安全的，而HashTable是线程安全的，此外，HashTable的值和value不能是null。</b>HashMap不能保证map的顺序，也不能保证其顺序操作耗时是常数等级； <br>
+如果hash函数的选取合适，使得元素在桶（buckets）内均匀的分布，那么HashMap对于get和put操作，耗时是常量级别，一个HashMap的实例有两个参数影响着它的性能，一个是初始容量（initial capacity），一个是负载因子（load factor）。容量指的是HashTable含有桶（buckets）的数量，初始容量就是HashTable实例在创建时的容量；负载因子是一个衡量标尺，用来描述HashTable在扩容之前的填满程度。当HashTable的实体（entries）数量超过了hash table的当前容量和负载因子的乘积，hash table需要进行重分配（rehashed），内部数据需要重新构建。 <br>
+HashTable默认的负载隐私是0.75，这是一个时间性能与空间消耗的平衡值。 <br>
+如果HashMap实例需要存储大量的映射关系，那么在初始化时选择一个足够大容量，而不是使用默认容量并自动扩容，可以显著的提高该实例的性能。 <br>
+<b>HashMap不是线程安全的</b>，可以通过以下方法，获取一个线程安全的HashMap实例</p>
+
+<pre>Map m = Collections.synchronizedMap(new HashMap(...));
+</pre>
+
+<p>线面看一下HashMap的源码：</p>
+
+<span class="diff"><pre>public class HashMap&lt;K,V&gt; extends AbstractMap&lt;K,V&gt;
+    implements Map&lt;K,V&gt;, Cloneable, Serializable {
+
+    //默认初始容量16
+    static final int DEFAULT_INITIAL_CAPACITY = 1 &lt;&lt; 4;
+
+    //最大容量 1&lt;&lt;30
+    static final int MAXIMUM_CAPACITY = 1 &lt;&lt; 30;
+
+    //默认负载隐私0.75
+    static final float DEFAULT_LOAD_FACTOR = 0.75f;
+
+    //bin阈值，大于等于8，使用红黑树以提高查询效率，小于8使用list； 
+    static final int TREEIFY_THRESHOLD = 8;
+
+    //重置容量操作时，不使用红黑树的bin阈值
+    static final int UNTREEIFY_THRESHOLD = 6;
+
+    //使用红黑树时，其容量初始值为64；
+    static final int MIN_TREEIFY_CAPACITY = 64;
+
+    //bin节点
+    //四个属性值（hash code, key, value, next node） 
+    static class Node&lt;K,V&gt; implements Map.Entry&lt;K,V&gt; {
+        final int hash;
+        final K key;
+        V value;
+        Node&lt;K,V&gt; next;
+
+        Node(int hash, K key, V value, Node&lt;K,V&gt; next) {
+            this.hash = hash;
+            this.key = key;
+            this.value = value;
+            this.next = next;
+        }
+
+        public final K getKey()        { return key; }
+        public final V getValue()      { return value; }
+        public final String toString() { return key + "=" + value; }
+
+        public final int hashCode() {
+            return Objects.hashCode(key) ^ Objects.hashCode(value);
+        }
+
+        public final V setValue(V newValue) {
+            V oldValue = value;
+            value = newValue;
+            return oldValue;
+        }
+
+        public final boolean equals(Object o) {
+            if (o == this)
+                return true;
+            if (o instanceof Map.Entry) {
+                Map.Entry&lt;?,?&gt; e = (Map.Entry&lt;?,?&gt;)o;
+                if (Objects.equals(key, e.getKey()) &amp;&amp;
+                    Objects.equals(value, e.getValue()))
+                    return true;
+            }
+            return false;
+        }
+    }
+
+    //hash函数（如果key==null，返回0）
+    //取key.hashCode()，并将其高字节移至低字节，
+    static final int hash(Object key) {
+        int h;
+        return (key == null) ? 0 : (h = key.hashCode()) ^ (h &gt;&gt;&gt; 16);
+    }
+
+    //桶数组
+    transient Node&lt;K,V&gt;[] table;
+
+    //键值对
+    transient Set&lt;Map.Entry&lt;K,V&gt;&gt; entrySet;
+
+    //Map的容量
+    transient int size;
+
+    //下次扩容的数量，初值值为0
+    int threshold;
+
+    //负载因子
+    final float loadFactor;
+
+    //给句给定的值构造每次扩容的量
+    //扩容量是2的指数
+    static final int tableSizeFor(int cap) {
+        int n = cap - 1; 
+        n |= n &gt;&gt;&gt; 1;
+        n |= n &gt;&gt;&gt; 2;
+        n |= n &gt;&gt;&gt; 4;
+        n |= n &gt;&gt;&gt; 8;
+        n |= n &gt;&gt;&gt; 16;
+        //上面的操作为为了保证符合2的倍数
+        return (n &lt; 0) ? 1 : (n &gt;= MAXIMUM_CAPACITY) ? MAXIMUM_CAPACITY : n + 1;
+    }
+
+    //构造函数
+    //带容量和负载因子
+    public HashMap(int initialCapacity, float loadFactor) {
+        if (initialCapacity &lt; 0)
+            throw new IllegalArgumentException("Illegal initial capacity: " +
+                                               initialCapacity);
+        if (initialCapacity &gt; MAXIMUM_CAPACITY)
+            initialCapacity = MAXIMUM_CAPACITY;
+        if (loadFactor &lt;= 0 || Float.isNaN(loadFactor))
+            throw new IllegalArgumentException("Illegal load factor: " +
+                                               loadFactor);
+        this.loadFactor = loadFactor;
+        this.threshold = tableSizeFor(initialCapacity);
+    }
+
+    //构造函数
+    //带容量
+    public HashMap(int initialCapacity) {
+        this(initialCapacity, DEFAULT_LOAD_FACTOR);
+    }
+    //构造函数
+    //使用默认值
+    public HashMap() {
+        this.loadFactor = DEFAULT_LOAD_FACTOR;
+    }
+
+    //构造函数
+    //参数为Map
+    public HashMap(Map&lt;? extends K, ? extends V&gt; m) {
+        this.loadFactor = DEFAULT_LOAD_FACTOR;
+        putMapEntries(m, false);
+    }
+
+    //将跟定Map中的隐射关系转移到当前HashMap中
+    final void putMapEntries(Map&lt;? extends K, ? extends V&gt; m, boolean evict) {
+        int s = m.size();
+        if (s &gt; 0) {
+            if (table == null) {
+                //<b>容量计算方法&lt;/&gt;
+                float ft = ((float)s / loadFactor) + 1.0F;
+                int t = ((ft &lt; (float)MAXIMUM_CAPACITY) ?
+                         (int)ft : MAXIMUM_CAPACITY);
+                if (t &gt; threshold)
+                    threshold = tableSizeFor(t);
+            }
+            else if (s &gt; threshold)
+                resize();
+            for (Map.Entry&lt;? extends K, ? extends V&gt; e : m.entrySet()) {
+                K key = e.getKey();
+                V value = e.getValue();
+                putVal(hash(key), key, value, false, evict);
+            }
+        }
+    }
+
+    //重构table数组
+    final Node&lt;K,V&gt;[] resize() {
+        Node&lt;K,V&gt;[] oldTab = table;
+        int oldCap = (oldTab == null) ? 0 : oldTab.length;
+        int oldThr = threshold;
+        int newCap, newThr = 0;
+        if (oldCap &gt; 0) {
+            if (oldCap &gt;= MAXIMUM_CAPACITY) {
+                threshold = Integer.MAX_VALUE;
+                return oldTab;
+            }
+            else if ((newCap = oldCap &lt;&lt; 1) &lt; MAXIMUM_CAPACITY &amp;&amp;
+                     oldCap &gt;= DEFAULT_INITIAL_CAPACITY)
+                newThr = oldThr &lt;&lt; 1; // double threshold
+        }
+        else if (oldThr &gt; 0) // initial capacity was placed in threshold
+            newCap = oldThr;
+        else {               // zero initial threshold signifies using defaults
+            newCap = DEFAULT_INITIAL_CAPACITY;
+            newThr = (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY);
+        }
+        if (newThr == 0) {
+            float ft = (float)newCap * loadFactor;
+            newThr = (newCap &lt; MAXIMUM_CAPACITY &amp;&amp; ft &lt; (float)MAXIMUM_CAPACITY ?
+                      (int)ft : Integer.MAX_VALUE);
+        }
+        threshold = newThr;
+        @SuppressWarnings({"rawtypes","unchecked"})
+            Node&lt;K,V&gt;[] newTab = (Node&lt;K,V&gt;[])new Node[newCap];
+        table = newTab;
+        if (oldTab != null) {
+            for (int j = 0; j &lt; oldCap; ++j) {
+                Node&lt;K,V&gt; e;
+                if ((e = oldTab[j]) != null) {
+                    oldTab[j] = null;
+                    if (e.next == null)
+                        newTab[e.hash &amp; (newCap - 1)] = e;
+                    else if (e instanceof TreeNode)
+                        ((TreeNode&lt;K,V&gt;)e).split(this, newTab, j, oldCap);
+                    else { // preserve order
+                        Node&lt;K,V&gt; loHead = null, loTail = null;
+                        Node&lt;K,V&gt; hiHead = null, hiTail = null;
+                        Node&lt;K,V&gt; next;
+                        do {
+                            next = e.next;
+                            if ((e.hash &amp; oldCap) == 0) {
+                                if (loTail == null)
+                                    loHead = e;
+                                else
+                                    loTail.next = e;
+                                loTail = e;
+                            }
+                            else {
+                                if (hiTail == null)
+                                    hiHead = e;
+                                else
+                                    hiTail.next = e;
+                                hiTail = e;
+                            }
+                        } while ((e = next) != null);
+                        if (loTail != null) {
+                            loTail.next = null;
+                            newTab[j] = loHead;
+                        }
+                        if (hiTail != null) {
+                            hiTail.next = null;
+                            newTab[j + oldCap] = hiHead;
+                        }
+                    }
+                }
+            }
+        }
+        return newTab;
+    }
+
+    //插值操作
+    //<b>核心</b>
+    final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
+                   boolean evict) {
+        Node&lt;K,V&gt;[] tab; Node&lt;K,V&gt; p; int n, i;
+        if ((tab = table) == null || (n = tab.length) == 0)
+            n = (tab = resize()).length; //如果table不存在，创建table
+        if ((p = tab[i = (n - 1) &amp; hash]) == null) //所示table的hash位无值，
+            tab[i] = newNode(hash, key, value, null); //则直接设置为新的键值关系节点
+        else { //若是hash位已经有值
+            Node&lt;K,V&gt; e; K k;
+            if (p.hash == hash &amp;&amp;
+                ((k = p.key) == key || (key != null &amp;&amp; key.equals(k))))
+                e = p; //key值已存在，其值赋给e
+            else if (p instanceof TreeNode)
+                //若p已经是红黑树，则再树上插入新的键值对；
+                e = ((TreeNode&lt;K,V&gt;)p).putTreeVal(this, tab, hash, key, value);
+            else {
+                for (int binCount = 0; ; ++binCount) {
+                    if ((e = p.next) == null) {
+                        p.next = newNode(hash, key, value, null);
+                        //如果p上不存在现有key，且节点数已经达到8个，那么换成红黑树
+                        if (binCount &gt;= TREEIFY_THRESHOLD - 1) 
+                            treeifyBin(tab, hash);
+                        break;
+                    }
+                    if (e.hash == hash &amp;&amp;
+                        ((k = e.key) == key || (key != null &amp;&amp; key.equals(k))))
+                        //若p上存在key值，返回e
+                        break;
+                    p = e;
+                }
+            }
+            if (e != null) { // 已经存在的key值，替换
+                V oldValue = e.value;
+                if (!onlyIfAbsent || oldValue == null)
+                    e.value = value;
+                afterNodeAccess(e);
+                return oldValue;
+            }
+        }
+        ++modCount;
+        if (++size &gt; threshold)
+            resize();
+        afterNodeInsertion(evict);
+        return null;
+    }
+
+    //新建红黑树
+    final void treeifyBin(Node&lt;K,V&gt;[] tab, int hash) {
+        int n, index; Node&lt;K,V&gt; e;
+        if (tab == null || (n = tab.length) &lt; MIN_TREEIFY_CAPACITY)
+            resize();
+        else if ((e = tab[index = (n - 1) &amp; hash]) != null) {
+            TreeNode&lt;K,V&gt; hd = null, tl = null;
+            do {
+                TreeNode&lt;K,V&gt; p = replacementTreeNode(e, null);
+                if (tl == null)
+                    hd = p;
+                else {
+                    p.prev = tl;
+                    tl.next = p;
+                }
+                tl = p;
+            } while ((e = e.next) != null);
+            if ((tab[index] = hd) != null)
+                hd.treeify(tab);
+        }
+    }
+
+    //返回容量
+    public int size() {
+        return size;
+    }
+
+    //是否为空
+    public boolean isEmpty() {
+        return size == 0;
+    }
+
+    //获取key的值value
+    public V get(Object key) {
+        Node&lt;K,V&gt; e;
+        return (e = getNode(hash(key), key)) == null ? null : e.value;
+    }
+    //获取指定的key的节点
+    //指针碰撞，使用==或者equal对比
+    final Node&lt;K,V&gt; getNode(int hash, Object key) {
+        Node&lt;K,V&gt;[] tab; Node&lt;K,V&gt; first, e; int n; K k;
+        if ((tab = table) != null &amp;&amp; (n = tab.length) &gt; 0 &amp;&amp;
+            (first = tab[(n - 1) &amp; hash]) != null) {
+            if (first.hash == hash &amp;&amp; 
+                ((k = first.key) == key || (key != null &amp;&amp; key.equals(k))))
+                return first;
+            if ((e = first.next) != null) {
+                if (first instanceof TreeNode)
+                    return ((TreeNode&lt;K,V&gt;)first).getTreeNode(hash, key);
+                do {
+                    if (e.hash == hash &amp;&amp;
+                        ((k = e.key) == key || (key != null &amp;&amp; key.equals(k))))
+                        return e;
+                } while ((e = e.next) != null);
+            }
+        }
+        return null;
+    }
+
+    //是否含有key
+    public boolean containsKey(Object key) {
+        return getNode(hash(key), key) != null;
+    }
+
+    //插入操作
+    public V put(K key, V value) {
+        return putVal(hash(key), key, value, false, true);
+    }
+
+    //批量插入
+    public void putAll(Map&lt;? extends K, ? extends V&gt; m) {
+        putMapEntries(m, true);
+    }
+
+    //删除key
+    public V remove(Object key) {
+        Node&lt;K,V&gt; e;
+        return (e = removeNode(hash(key), key, null, false, true)) == null ?
+            null : e.value;
+    }
+
+    final Node&lt;K,V&gt; removeNode(int hash, Object key, Object value,
+                               boolean matchValue, boolean movable) {
+        Node&lt;K,V&gt;[] tab; Node&lt;K,V&gt; p; int n, index;
+        if ((tab = table) != null &amp;&amp; (n = tab.length) &gt; 0 &amp;&amp;
+            (p = tab[index = (n - 1) &amp; hash]) != null) {
+            Node&lt;K,V&gt; node = null, e; K k; V v;
+            if (p.hash == hash &amp;&amp;
+                ((k = p.key) == key || (key != null &amp;&amp; key.equals(k))))
+                node = p;
+            else if ((e = p.next) != null) {
+                if (p instanceof TreeNode)
+                    node = ((TreeNode&lt;K,V&gt;)p).getTreeNode(hash, key);
+                else {
+                    do {
+                        if (e.hash == hash &amp;&amp;
+                            ((k = e.key) == key ||
+                             (key != null &amp;&amp; key.equals(k)))) {
+                            node = e;
+                            break;
+                        }
+                        p = e;
+                    } while ((e = e.next) != null);
+                }
+            }
+            if (node != null &amp;&amp; (!matchValue || (v = node.value) == value ||
+                                 (value != null &amp;&amp; value.equals(v)))) {
+                if (node instanceof TreeNode)
+                    ((TreeNode&lt;K,V&gt;)node).removeTreeNode(this, tab, movable);
+                else if (node == p)
+                    tab[index] = node.next;
+                else
+                    p.next = node.next;
+                ++modCount;
+                --size;
+                afterNodeRemoval(node);
+                return node;
+            }
+        }
+        return null;
+    }
+
+    //清空Map
+    public void clear() {
+        Node&lt;K,V&gt;[] tab;
+        modCount++;
+        if ((tab = table) != null &amp;&amp; size &gt; 0) {
+            size = 0;
+            for (int i = 0; i &lt; tab.length; ++i)
+                tab[i] = null;
+        }
+    }
+
+    //是否包含value值
+    //效率比较低
+    public boolean containsValue(Object value) {
+        Node&lt;K,V&gt;[] tab; V v;
+        if ((tab = table) != null &amp;&amp; size &gt; 0) {
+            for (int i = 0; i &lt; tab.length; ++i) {
+                for (Node&lt;K,V&gt; e = tab[i]; e != null; e = e.next) {
+                    if ((v = e.value) == value ||
+                        (value != null &amp;&amp; value.equals(v)))
+                        return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    //获取所有键的集合
+    public Set&lt;K&gt; keySet() {
+        Set&lt;K&gt; ks = keySet;
+        if (ks == null) {
+            ks = new KeySet();
+            keySet = ks;
+        }
+        return ks;
+    }
+
+    //获取值的集合
+    public Collection&lt;V&gt; values() {
+        Collection&lt;V&gt; vs = values;
+        if (vs == null) {
+            vs = new Values();
+            values = vs;
+        }
+        return vs;
+    }
+
+    //获取所有的键值关系
+    public Set&lt;Map.Entry&lt;K,V&gt;&gt; entrySet() {
+        Set&lt;Map.Entry&lt;K,V&gt;&gt; es;
+        return (es = entrySet) == null ? (entrySet = new EntrySet()) : es;
+    }
+
+    //获取，不存在时返回默认值
+    public V getOrDefault(Object key, V defaultValue) {
+        Node&lt;K,V&gt; e;
+        return (e = getNode(hash(key), key)) == null ? defaultValue : e.value;
+    }
+    ....
+}   
+</b></pre></span></div>
+</div>
+        </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="copyright text-muted">Copyright &copy; Ting Blog 2017</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/tether.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="../js/clean-blog.js"></script>
+
+</body>
+
+</html>

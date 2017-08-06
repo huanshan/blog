@@ -57,7 +57,7 @@
             <div class="row">
                 <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
                     <div class="post-heading">
-                        <h3>Java集合类--ArrayList源码分析</h3>
+                        <h3>Java集合--ArrayList源码分析</h3>
                         <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
                         <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
                     </div>
@@ -81,7 +81,11 @@
 add方法添加一个新的元素时，数组的容量会自动增长。 
 再调用Add方法之前，ArrayList实例可以通过ensureCapacity()方法增大数组的容量。<br> 
 格外需要注意的是，<b>ArrayList并不是线程安全的</b>，如果多个线程同时操作一个ArrayList的实例，并且至少一个线 
-程会改变这个实例的结构那么必须要进行Synchronized处理。 
+程会改变这个实例的结构那么必须要进行Synchronized处理。 若需要一个线程安全的ArrayList实例，使用下面方法创建，是比较常用的方法
+<pre>
+List list = Collections.synchronizedList(new ArrayList(...));
+</pre>
+
 下面，来具体分析一下ArrayList的源代码。</p>
 
 <pre>//继承了Seralizable接口，ArrayList是可序列化的和反序列化。

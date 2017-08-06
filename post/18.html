@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ting Blog</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../css/clean-blog.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+    <!-- Temporary navbar container fix -->
+    <style>
+    .navbar-toggler {
+        z-index: 1;
+    }
+    
+    @media (max-width: 576px) {
+        nav > .container {
+            width: 100%;
+        }
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed-top navbar-toggleable-md navbar-light" id="mainNav">
+        <div class="container">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu <i class="fa fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../post.html">文章</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('../img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <div class="post-heading">
+                        <h3>Java集合--基于双向链表的LinkedList源码分析</h3>
+                        <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
+                        <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+<div id="md-preview" >
+<p>LinkedList继承了List接口和Dque接口，Dque接口提供了对集合进行队列（Queue）操作的方法，使得LinkedList能够在双向链表的结构基础上实现数组的一般操作。 <br>
+<b>LinkedList并不是线程安全的，</b>如果多个线程同时操作一个LinkedList实例，必须要进行同步（Synchronized）处理， <br>
+若需要一个线程安全的LinkedList实例，使用下面方法创建，是比较常用的方法。</p>
+
+<pre>List list = Collections.synchronizedList(new ArrayList(...));
+</pre>
+
+<p>下面，看一下linkedList的实现源码：</p>
+
+<pre>//继承了Servializable, Cloneable, Deque和List接口
+public class LinkedList&lt;E&gt;
+    extends AbstractSequentialList&lt;E&gt;
+    implements List&lt;E&gt;, Deque&lt;E&gt;, Cloneable, java.io.Serializable
+{
+    //list size，初始化直接为0
+    transient int size = 0;
+
+    //每一个元素是一个Node.Node是双向链表的节点实现；
+    //数组的第一个节点
+    transient Node&lt;E&gt; first; 
+
+    //看一下一个简单的Node节点
+    //三个属性，当前节点值，前趋指针，后继指针
+    private static Class Node&lt;E&gt;{
+        E item;
+        Node&lt;E&gt; next;    
+        Node&lt;E&gt; prev;
+
+        Node(Node&lt;E&gt; prev, E element, Node&lt;E&gt; next){
+            this.item = element;
+            this.prev = prev;
+            this.next = next;
+        } 
+    }
+    //两个构造函数
+    public LinkedList() {
+    }
+
+    public LinkedList(Collection&lt;? extends E&gt; c) {
+        this();
+        addAll(c);
+    }
+
+    //将元素插入到数组的头部
+    //内部方法，将元素e作为数组第一个节点;
+    private void linkFirst(E e){
+        final Node&lt;E&gt; f = first;
+        final Node&lt;E&gt; newNode = new Node(null, e, f);
+        first = newNode;
+        if(f == null)
+            last = newNode;//一个元素，前趋后继都是null
+        else
+            f.prev = newNode;
+        size ++;
+        modCount ++;
+    }
+
+    //将元素添加到数组的末尾
+    void LinkLast(E e){
+        Node&lt;E&gt; l = last;
+        Node&lt;E&gt; newNode = new Node&lt;&gt;(l, e, null);
+        last = newNode;
+        if(l == null)
+            first = newNode;
+        else
+            l.next = newNode;
+        size ++;
+        modCount +;
+    }   
+
+    //在节点succ前插入元素e
+    void linkBefore(E e, Node&lt;E&gt; succ) {
+        final Node&lt;E&gt; pred = succ.prev;
+        final Node&lt;E&gt; newNode = new Node&lt;&gt;(pred, e, succ);
+        succ.prev = newNode;
+        if (pred == null)
+            first = newNode;
+        else
+            pred.next = newNode;
+        size++;
+        modCount++;
+    }
+
+    //删除非null首节点（f非空，且为first）
+    private E unlinkFirst(Node&lt;E&gt; f) {
+        final E element = f.item;
+        final Node&lt;E&gt; next = f.next;
+        f.item = null;
+        f.next = null; 
+        first = next;
+        if (next == null)
+            last = null;
+        else
+            next.prev = null;
+        size--;
+        modCount++;
+        return element;
+    }
+
+    //删除非null尾节点
+    private E unlinkLast(Node&lt;E&gt; l) {
+        final E element = l.item;
+        final Node&lt;E&gt; prev = l.prev;
+        l.item = null;
+        l.prev = null; 
+        last = prev;
+        if (prev == null)
+            first = null;
+        else
+            prev.next = null;
+        size--;
+        modCount++;
+        return element;
+    }
+
+    //删除一个节点x
+    E unlink(Node&lt;E&gt; x) {
+        final E element = x.item;
+        final Node&lt;E&gt; next = x.next;
+        final Node&lt;E&gt; prev = x.prev;
+
+        if (prev == null) {
+            first = next;
+        } else {
+            prev.next = next;
+            x.prev = null;
+        }
+
+        if (next == null) {
+            last = prev;
+        } else {
+            next.prev = prev;
+            x.next = null;
+        }
+
+        x.item = null;
+        size--;
+        modCount++;
+        return element;
+    }
+
+    //获取数组的第一个元素
+    //如果不存在，会抛出异常
+    public E getFirst() {
+        final Node&lt;E&gt; f = first;
+        if (f == null)
+            throw new NoSuchElementException();
+        return f.item;
+    }
+
+    //获取数组的最后一个元素
+    //如果不存在，会抛出异常
+    public E getLast() {
+        final Node&lt;E&gt; l = last;
+        if (l == null)
+            throw new NoSuchElementException();
+        return l.item;
+    }
+
+    //删除头结点
+    public E removeFirst() {
+        final Node&lt;E&gt; f = first;
+        if (f == null)
+            throw new NoSuchElementException();
+        return unlinkFirst(f);
+    }
+
+    //删除尾节点
+    public E removeLast() {
+        final Node&lt;E&gt; l = last;
+        if (l == null)
+            throw new NoSuchElementException();
+        return unlinkLast(l);
+    }
+
+    //添加头结点
+    public void addFirst(E e) {
+        linkFirst(e);
+    }
+
+    //删除尾节点
+    public void addLast(E e) {
+        linkLast(e);
+    }
+
+    //遍历数组，查找第一个出现item=o的次序
+    public int indexOf(Object o) {
+        int index = 0;
+        if (o == null) {
+            for (Node&lt;E&gt; x = first; x != null; x = x.next) {
+                if (x.item == null)
+                    return index;
+                index++;
+            }
+        } else {
+            for (Node&lt;E&gt; x = first; x != null; x = x.next) {
+                if (o.equals(x.item))
+                    return index;
+                index++;
+            }
+        }
+        return -1;
+    }
+
+    //判断数组是否含有元素o
+    public boolean contains(Object o) {
+        return indexOf(o) != -1;
+    }
+
+    //返回数组长度
+    public int size(){
+        return size;
+    }
+
+    //添加元素，添加到数组末尾
+    public boolean add(E e) {
+        linkLast(e);
+        return true;
+    }
+
+    //遍历数组，移除元素o
+    public boolean remove(Object o) {
+        if (o == null) {
+            for (Node&lt;E&gt; x = first; x != null; x = x.next) {
+                if (x.item == null) {
+                    unlink(x);
+                    return true;
+                }
+            }
+        } else {
+            for (Node&lt;E&gt; x = first; x != null; x = x.next) {
+                if (o.equals(x.item)) {
+                    unlink(x);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    //添加集合Colleciton
+    public boolean addAll(Collection<!--? extends E--> c) {
+        return addAll(size, c);
+    }
+
+    //从数组的第index位置，添加集合c
+    public boolean addAll(int index, Collection<!--? extends E--> c) {
+        checkPositionIndex(index);
+
+        Object[] a = c.toArray();
+        int numNew = a.length;
+        if (numNew == 0)
+            return false;
+
+        Node&lt;E&gt; pred, succ;
+        if (index == size) {
+            succ = null;
+            pred = last;
+        } else {
+            succ = node(index);
+            pred = succ.prev;
+        }
+
+        for (Object o : a) {
+            @SuppressWarnings("unchecked") E e = (E) o;
+            //这个地方有个类型降级转换
+            Node&lt;E&gt; newNode = new Node&lt;&gt;(pred, e, null);
+            if (pred == null)
+                first = newNode;
+            else
+                pred.next = newNode;
+            pred = newNode;
+        }
+
+        if (succ == null) {
+            last = pred;
+        } else {
+            pred.next = succ;
+            succ.prev = pred;
+        }
+
+        size += numNew;
+        modCount++;
+        return true;
+    }
+
+    //清空数组，node节点置为null，保证GC回收，
+    //first = last = null;
+    public void clear() {
+        for (Node&lt;E&gt; x = first; x != null; ) {
+            Node&lt;E&gt; next = x.next;
+            x.item = null;
+            x.next = null;
+            x.prev = null;
+            x = next;
+        }
+        first = last = null;
+        size = 0;
+        modCount++;
+    }
+
+    //获取数组index位置的值
+    public E get(int index) {
+        checkElementIndex(index);
+        return node(index).item;
+    }
+
+    //设置数组index位置的值
+    public E set(int index, E element) {
+        checkElementIndex(index);
+        Node&lt;E&gt; x = node(index);
+        E oldVal = x.item;
+        x.item = element;
+        return oldVal;
+    }
+
+    //从数组index位置后，添加元素element
+    public void add(int index, E element) {
+        checkPositionIndex(index);
+
+        if (index == size)
+            linkLast(element);
+        else
+            linkBefore(element, node(index));
+    }
+
+    //删除index位置的元素
+    public E remove(int index) {
+        checkElementIndex(index);
+        return unlink(node(index));
+    }
+
+    //判断index有没有越界
+    private boolean isElementIndex(int index) {
+        return index &gt;= 0 &amp;&amp; index &lt; size;
+    }
+    //同上
+    private boolean isPositionIndex(int index) {
+        return index &gt;= 0 &amp;&amp; index &lt;= size;
+    }
+
+    //获取index位置的Node
+    //<b>判断index是前半部分还是后半部分，
+    //前面部分的话，从前往后遍历，否则从后往前遍历，提高查找效率</b>
+    Node&lt;E&gt; node(int index) {
+        if (index &lt; (size &gt;&gt; 1)) {
+            Node&lt;E&gt; x = first;
+            for (int i = 0; i &lt; index; i++)
+                x = x.next;
+            return x;
+        } else {
+            Node&lt;E&gt; x = last;
+            for (int i = size - 1; i &gt; index; i--)
+                x = x.prev;
+            return x;
+        }
+    }
+
+    //返回头结点元素
+    //不存在返回null
+    public E peek() {
+        final Node&lt;E&gt; f = first;
+        return (f == null) ? null : f.item;
+    }
+
+    //返回头结点，若头结点不存在抛异常
+    public E element() {
+        return getFirst();
+    }
+
+    //删除头结点
+    public E poll() {
+        final Node&lt;E&gt; f = first;
+        return (f == null) ? null : unlinkFirst(f);
+    }
+    //删除头结点，若头结点不存在抛异常
+    public E remove() {
+        return removeFirst();
+    }
+
+    //数组末尾添加元素
+    public boolean offer(E e) {
+        return add(e);
+    }
+
+    //元素头结点添加元素
+    public boolean offerFirst(E e) {
+        addFirst(e);
+        return true;
+    }
+
+    //数组末尾添加元素
+    public boolean offerLast(E e) {
+        addLast(e);
+        return true;
+    }
+    //返回头元素
+    public E peekFirst() {
+        final Node&lt;E&gt; f = first;
+        return (f == null) ? null : f.item;
+     }
+    //返回尾元素
+    public E peekLast() {
+        final Node&lt;E&gt; l = last;
+        return (l == null) ? null : l.item;
+    } 
+    //删除头元素
+    public E pollFirst() {
+        final Node&lt;E&gt; f = first;
+        return (f == null) ? null : unlinkFirst(f);
+    }
+
+    //删除为元素
+    public E pollLast() {
+        final Node<e> l = last;
+        return (l == null) ? null : unlinkLast(l);
+    }
+
+    //添加头元素
+    public void push(E e) {
+        addFirst(e);
+    }
+
+    //返回并删除头元素
+    public E pop() {
+        return removeFirst();
+    }
+
+    //删除元素o第一次出现的节点
+    public boolean removeFirstOccurrence(Object o) {
+        return remove(o);
+    }
+
+    //删除元素o最后一次出现的节点
+    public boolean removeLastOccurrence(Object o) {
+        if (o == null) {
+            for (Node<e> x = last; x != null; x = x.prev) {
+                if (x.item == null) {
+                    unlink(x);
+                    return true;
+                }
+            }
+        } else {
+            for (Node<e> x = last; x != null; x = x.prev) {
+                if (o.equals(x.item)) {
+                    unlink(x);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    //返回ListIterator对象
+    public ListIterator<e> listIterator(int index) {
+        checkPositionIndex(index);
+        return new ListItr(index);
+    }
+
+    public Iterator<e> descendingIterator() {
+        return new DescendingIterator();
+    }
+
+    //clone方法
+    //创建新的数组
+    public Object clone() {
+        LinkedList<e> clone = superClone();
+
+        clone.first = clone.last = null;
+        clone.size = 0;
+        clone.modCount = 0;
+
+        for (Node<e> x = first; x != null; x = x.next)
+            clone.add(x.item);
+
+        return clone;
+    }
+
+    //转成普通数组
+    public Object[] toArray() {
+        Object[] result = new Object[size];
+        int i = 0;
+        for (Node<e> x = first; x != null; x = x.next)
+            result[i++] = x.item;
+        return result;
+    }
+
+    public <t> T[] toArray(T[] a) {
+        if (a.length &lt; size)
+            a = (T[])java.lang.reflect.Array.newInstance(
+                                a.getClass().getComponentType(), size);
+        int i = 0;
+        Object[] result = a;
+        for (Node<e> x = first; x != null; x = x.next)
+            result[i++] = x.item;
+
+        if (a.length &gt; size)
+            a[size] = null;
+
+        return a;
+
+    }
+}
+</e></t></e></e></e></e></e></e></e></e></pre><span class="diff"></span></div>
+</div>
+        </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="copyright text-muted">Copyright &copy; Ting Blog 2017</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/tether.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="../js/clean-blog.js"></script>
+
+</body>
+
+</html>
