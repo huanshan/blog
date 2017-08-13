@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ting Blog</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../css/clean-blog.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+    <!-- Temporary navbar container fix -->
+    <style>
+    .navbar-toggler {
+        z-index: 1;
+    }
+    
+    @media (max-width: 576px) {
+        nav > .container {
+            width: 100%;
+        }
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed-top navbar-toggleable-md navbar-light" id="mainNav">
+        <div class="container">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu <i class="fa fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../post.html">文章</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('../img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <div class="post-heading">
+                        <h3>java多线程基础--Synchronize同步（2）</h3>
+                        <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
+                        <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+<div id="md-preview" >
+
+<h5>synchronized锁重入</h5>
+
+<p>关键字synchronized拥有锁重入的功能，也就是在使用synchronized时，当一个线程得到一个锁后，再次请求此对象锁时，是可以再次得到该对象的锁的。即在一个synchronized方法或者代码块的内部调用本类的其它synchronized方法或者代码块时，是永远可以得到的。</p>
+
+<pre>public class Service {
+    public synchronized void service1(){
+        System.out.println("service1 start");
+        service2();
+        System.out.println("service1 end");
+    }
+
+    private synchronized void service2(){
+        System.out.println("service2 run");
+    }
+}
+public class ServiceThread extends Thread {
+    private Service service;
+    public ServiceThread(Service service){
+        this.service = service;
+    }
+    public void run(){
+        service.service1();
+    }
+}
+</pre>
+
+<p>运行：</p>
+
+<pre>    public static void main(String[] args){
+        Thread td = new ServiceThread(new Service());
+        td.start();
+    }
+</pre>
+
+<p>运行结果</p>
+
+<pre>service1 start
+service2 run
+service1 end
+</pre>
+
+<p>运行结果表明，service1()方法在调用service2()方法时，并没有因为使用synchronized关键字声明而发生锁等待，因此如果真的那样的话，程序就执行不下去了，也就造成了死锁。 <br>
+可重入锁指的是自己可以获取自己的内部锁，可重入锁也支持父子继承类的环境。 <br>
+当一个线程执行的代码发生异常时，其所持有的锁会自动释放。这就避免了，线程出错，导致锁得不到释放而出现死锁。</p>
+
+<h5>synchronized同步语句块</h5>
+
+<p>用关键字synchronized声明方法在某些情况下是有弊端的，比如线程A调用同步方法执行一个长时间的任务，那么线程B必须等待比较长的时间。 <br>
+下面，构造一个自动计算器</p>
+
+<pre>public class AutoCount {
+    private Long count = 0L;
+    public synchronized Long getCount(){
+        try {
+            Thread.currentThread().sleep(3000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        count ++;
+        return count;
+    }
+
+}
+</pre>  
+
+<p>操作这个自动计数器的线程：</p>
+
+<pre>public class CountThread extends Thread {
+    private AutoCount autoCount;
+    public CountThread(String name, AutoCount autoCount){
+        this.autoCount = autoCount;
+        this.setName(name);
+    }
+    public void run(){
+        Long start =  System.currentTimeMillis();
+        System.out.println("Thread-&gt;" + this.getName() +
+                ", start :" + start);
+        System.out.println("count -&gt;" + autoCount.getCount());
+        Long end = System.currentTimeMillis();
+        System.out.println("Thread-&gt;" + this.getName() + ", end :"
+                + end + ", cost :"
+                + (end - start));
+    }
+}
+</pre>          
+
+<p>如果两个线程共同操作同一个自动计数器</p>
+
+<pre>    public static void main(String[] args){
+        AutoCount autoCount = new AutoCount();
+        CountThread td1 = new CountThread("td1", autoCount);
+        CountThread td2 = new CountThread("td2", autoCount);
+        td1.start();
+        td2.start();
+    }
+</pre>
+
+<p>看一下运行结果:</p>
+
+<pre>Thread-&gt;td1, start :1502459902611
+Thread-&gt;td2, start :1502459902612
+count -&gt;0
+Thread-&gt;td1, end :1502459905613, cost :3002
+count -&gt;1
+Thread-&gt;td2, end :1502459908613, cost :6001
+</pre>
+
+<p>两个线程td1和td2几乎是在同时启动的，但是由于整个getCount()方法都进行了同步，而且运行时间较长，就导致td2必须等到td1的调用结束，才能调用getCount()方法。 <br>
+为了解决这种时间消耗，我们可以使用sychronized同步代码块，只在对count进行操作的代码块添加synchronized关键字。</p>
+
+<pre>synchronized(this){
+    count ++;
+}
+</pre>
+
+<p>运行结果</p>
+
+<pre>Thread-&gt;td1, start :1502460414289
+Thread-&gt;td2, start :1502460414289
+count -&gt;1
+count -&gt;2
+Thread-&gt;td1, end :1502460417290, cost :3001
+Thread-&gt;td2, end :1502460417290, cost :3001
+</pre>
+
+<p>运行结果显示，td2的运行时间大大的缩短了。</p>
+
+<h5>synchronized同步代码块</h5>
+
+<p>当两个线程访问同一个对象object中的synchronized(this)同步代码时，一段时间内只能由一个线程被执行，另一个线程必须等待当前线程执行完这个代码块后才能执行该代码块。但是一般，添加synchronized关键字的代码块的处理时间会比较短，因此其它线程的等待时间也会大大缩短，如上面的例子所示。 <br>
+在使用同步synchronized(this)代码块时需要注意的是，当一个线程访问object的一个synchronized(this)代码块时，其它线程对同一个object中其它的synchronized(this)同步代码块的访问就被阻塞，因为synchronized(this)获得的锁是对象的锁。</p>
+
+<pre>public class Service {
+    public void service1(){
+        Long start = System.currentTimeMillis();
+        System.out.println("service1 start :" + start);
+        synchronized(this) {
+            try {
+                Thread.currentThread().sleep(3000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        Long end = System.currentTimeMillis();
+        System.out.println("service1 end :" + end);
+        System.out.println("cost : " + (end -start));
+    }
+
+    public void service2(){
+        Long start = System.currentTimeMillis();
+        System.out.println("service2 start :" + start);
+        synchronized(this) {
+            try {
+                Thread.currentThread().sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        Long end = System.currentTimeMillis();
+        System.out.println("service2 end :" + end);
+        System.out.println("cost : " + (end -start));
+    }
+}
+</pre>
+
+<p>创建两个线程，分别调用Service对象的同一个实例的service1()方法和service2()方法。</p>
+
+<pre>public class ServiceThread extends Thread {
+    private Service service;
+    public ServiceThread(Service service){
+        this.service = service;
+    }
+    public void run(){
+        service.service1();
+    }
+}
+public class ServiceThread2 extends Thread {
+    private Service service;
+    public ServiceThread2(Service service){
+        this.service = service;
+    }
+    public void run(){
+        service.service2();
+    }
+}
+</pre>
+
+<p>运行一下</p>
+
+<pre>    public static void main(String[] args){
+        Service ser = new Service();
+        Thread td = new ServiceThread(ser);
+        td.start();
+        Thread td2 = new ServiceThread2(ser);
+        td2.start();
+    }
+</pre>
+
+<p>运行结果：</p>
+
+<pre>service1 start :1502463381203
+service2 start :1502463381203
+service1 end :1502463384205
+cost : 3002
+service2 end :1502463385205
+cost : 4002
+</pre>
+
+<p>同synchronized标记的方法一样，synchronized标记的多个代码块同样具有同步的作用，保证其顺序执行。</p>
+
+<h5>synchronized总结</h5>
+
+<p>多个线程调用同一个对象中的不同名称的synchronized同步方法或synchronized(this)同步代码块时，调用的效果就是按顺序执行。 <br>
+这说明synchronized同步方法或synchronized(this)同步代码块分别有两种作用： <br>
+1）synchronized同步方法 <br>
+（1）对其它synchronized同步方法或synchronized(this)同步代码块调用呈阻塞状态； <br>
+（2）同一时间只有一个线程可以执行synchronized同步方法中的代码； <br>
+2）synchronized(this)同步代码块 <br>
+（1）对其它synchronized同步方法或者synchronized(this)同步代码块调用呈阻塞状态。 <br>
+（2）同一时间只有一个线程可以执行synchronized(this)同步代码块中的代码。 <br>
+其实，java还支持对“任意对象”作为对象监视器来实现同步的功能。任意对象大多是实例变量及方法的参数，使用格式为synchronized(非this对象)，其只可以用来同步代码块。 <br>
+当多个线程持有“对象监视器”为同一个对象的前提下，同一时间只有一个线程可以执行synchronized(非this对象)同步代码块中的代码。当持有“对象监视器”为同一个对象的前提下，同一个时间只有一个线程可以执行synchronized(非this对象)同步块中的代码。 <br>
+下面的例子是使用一个String对象作为对象监视器的：</p>
+
+<pre>public class StringSynBlock {
+    private String name;
+    private String password;
+    private String stringLock = new String();
+    private String StringLock2 = new String();
+    public void set(String name, String password){
+        System.out.println("Thread -&gt;" + Thread.currentThread().getName() + " run");
+        synchronized (stringLock){
+            System.out.println("Thread -&gt;" + Thread.currentThread().getName()
+                    + " begin to set ");
+            this.name = name;
+            this.password = password;
+            System.out.println("Thread-&gt;" + Thread.currentThread().getName()
+            + ", name-&gt;" + this.name + ", password-&gt;" + this.password);
+        }
+    }
+}
+public class BlockThread extends Thread {
+    private StringSynBlock lock;
+    private String name;
+    private String password;
+    public BlockThread(StringSynBlock lock,
+                       String name, String password){
+        this.name = name;
+        this.password = password;
+        this.lock = lock;
+    }
+    public void run(){
+        lock.set(name, password);
+    }
+}
+</pre>
+
+<p>测试一下：</p>
+
+<pre>public class StringBlockTest {
+    public static void main(String[] args){
+        StringSynBlock lock = new StringSynBlock();
+        Thread td = new BlockThread(lock, "a", "aaa");
+        Thread td2 = new BlockThread(lock, "b", "bbb");
+        td.start();
+        td2.start();
+    }
+}
+</pre>
+
+<p>运行结果：</p>
+
+<pre>Thread -&gt;Thread-1 run
+Thread -&gt;Thread-0 run
+Thread -&gt;Thread-1 begin to set 
+Thread-&gt;Thread-1, name-&gt;b, password-&gt;bbb
+Thread -&gt;Thread-0 begin to set 
+Thread-&gt;Thread-0, name-&gt;a, password-&gt;aaa
+</pre>
+
+<p>结果说明，使用非this对象锁，仍然是可以达到同步控制，顺序执行的效果的。 <br>
+同this对象锁一样，非this对象作为对象监视器时，只有使用了同一个非this对象作为监视器的synchronized关键字声明的方法或者代码块，才具有同步顺序执行的效果，如果方法或者代码块的监视器不是同一个非this对象，那么依然起不到同步顺序执行的效果。</p>
+
+<pre>public class StringSynBlock {
+    private String name;
+    private String password;
+    private String stringLock = new String("lock1");
+    private String stringLock2 = new String("lock2");
+    public void set(String name, String password){
+        System.out.println("Thread -&gt;" + Thread.currentThread().getName()
+                + " run");
+        synchronized (stringLock){
+            System.out.println("Thread -&gt;" + Thread.currentThread().getName()
+                    + " begin to set ");
+            this.name = name;
+            try {
+                Thread.currentThread().sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            this.password = password;
+            System.out.println("Thread-&gt;" + Thread.currentThread().getName()
+            + ", name-&gt;" + this.name + ", password-&gt;" + this.password);
+        }
+    }
+
+    public void set2(String name, String password){
+        System.out.println("Thread set2 -&gt;" + Thread.currentThread().getName()
+                + " run");
+        synchronized (stringLock2){
+            System.out.println("Thread -&gt;" + Thread.currentThread().getName()
+                    + " begin to set2 ");
+            this.name = name;
+            try {
+                Thread.currentThread().sleep(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            this.password = password;
+            System.out.println("Thread set2 -&gt;" + Thread.currentThread().getName()
+                    + ", name-&gt;" + this.name + ", password-&gt;" + this.password);
+        }
+    }
+}
+public class BlockThread extends Thread {
+    private StringSynBlock lock;
+    private String name;
+    private String password;
+    private Integer set;
+    public BlockThread(StringSynBlock lock,
+                       String name, String password, Integer set){
+        this.name = name;
+        this.password = password;
+        this.lock = lock;
+        this.set = set;
+    }
+    public void run(){
+        if(set.equals(1)) {
+            lock.set(name, password);
+        } else {
+            lock.set2(name, password);
+        }
+    }
+}
+</pre>
+
+<p>运行:</p>
+
+<pre>    public static void main(String[] args){
+        StringSynBlock lock = new StringSynBlock();
+        Thread td = new BlockThread(lock, "a", "aaa", 1);
+        Thread td2 = new BlockThread(lock, "b", "bbb", 2);
+        td.start();
+        td2.start();
+    }
+</pre>
+
+<p>Thread0使用的对象监控器是stringLock， Thread1使用的对象监控器是stringLock2，结果出现了脏读，使用不同的非this对象作为对象监控器并不能起到同步的效果。</p>
+
+<h5>静态同步synchronized方法</h5>
+
+<p>关键字synchronized还可以应用在static静态方法上，如果这样写，那是对当前的.java文件对应的Class类进行持锁。</p>
+
+<pre>public class StaticLock {
+    public synchronized static void printA(){
+        Thread ct = Thread.currentThread();
+        System.out.println("thread-&gt;" + ct.getName() + ", start ");
+        try {
+            ct.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("thread-&gt;" + ct.getName() + ", end ");
+    }
+
+    public synchronized static void printB(){
+        Thread ct = Thread.currentThread();
+        System.out.println("thread-&gt;" + ct.getName() + ", start ");
+        try {
+            ct.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("thread-&gt;" + ct.getName() + ", end ");
+    }
+}
+
+public class StaticThread extends Thread{
+    private String print  = "A";
+    public StaticThread(String print){
+        this.setName(print);
+        this.print = print;
+    }
+    public void run(){
+        if(this.print.equals("A")){
+            StaticLock.printA();
+        } else {
+            StaticLock.printB();
+        }
+    }
+}
+</pre>
+
+<p>运行一下:</p>
+
+<pre>    public static void main(String[] args){
+        Thread td1 = new StaticThread("A");
+        Thread td2 = new StaticThread("B");
+        td1.start();
+        td2.start();
+    }
+</pre>
+
+<p>运行结果：</p>
+
+<pre>thread-&gt;A, start 
+thread-&gt;A, end 
+thread-&gt;B, start 
+thread-&gt;B, end 
+</pre>
+
+<p>从运行结果看，是实现了同步效果的。静态方法加上synchronized关键字与非静态方法加synchronized关键字是有区别的，静态方法加synchronized关键字声明是给class类上锁，等同于synchronized(this.getClass())，而非静态方法加synchronized声明是给当前对象加锁，等同于synchronized(this)。 <br>
+我们队上面的例子进行简单的修改，对StaticLock类添加非静态方法printC()加synchronized声明。</p>
+
+<pre>    public synchronized void printC(){
+        Thread ct = Thread.currentThread();
+        System.out.println("thread-&gt;" + ct.getName() + ", start ");
+        try {
+            ct.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("thread-&gt;" + ct.getName() + ", end ");
+    }
+</pre>
+
+<p>运行结果:</p>
+
+<pre>thread-&gt;A, start 
+thread-&gt;C, start 
+thread-&gt;A, end 
+thread-&gt;B, start 
+thread-&gt;C, end 
+thread-&gt;B, end
+</pre>
+
+<p>结果显示，方法printC()与printA()，printB()的同步作用失效了，这说明他们并不是公用的同一个对象监视器。如果我们将printC换成</p>
+
+<pre>    public void printC(){
+        synchronized(this.getClass()) {
+            Thread ct = Thread.currentThread();
+            System.out.println("thread-&gt;" + ct.getName() + ", start ");
+            try {
+                ct.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println("thread-&gt;" + ct.getName() + ", end ");
+        }
+    }
+</pre>
+
+<p>运行结果:</p>
+
+<pre>thread-&gt;A, start 
+thread-&gt;A, end 
+thread-&gt;C, start 
+thread-&gt;C, end 
+thread-&gt;B, start 
+thread-&gt;B, end 
+</pre>
+
+<p>这说明synchronized声明的静态方法的锁是class锁。</p>
+
+<h5>总结</h5>
+
+<p>使用synchronized声明的方法或者代码块具有同步的作用，默认的锁时this对象锁，也可以使用非this对象锁，但是要进行同步的方法或者代码块必须使用同一个非this对象锁。synchronized声明的静态方法也具有同步作用，等同于synchronized(this.getClass())，它的锁时当前的class类。</p><span class="diff"></span></div>
+</div>
+        </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="copyright text-muted">Copyright &copy; Ting Blog 2017</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/tether.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="../js/clean-blog.js"></script>
+
+</body>
+
+</html>

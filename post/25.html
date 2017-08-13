@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ting Blog</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../css/clean-blog.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+    <!-- Temporary navbar container fix -->
+    <style>
+    .navbar-toggler {
+        z-index: 1;
+    }
+    
+    @media (max-width: 576px) {
+        nav > .container {
+            width: 100%;
+        }
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed-top navbar-toggleable-md navbar-light" id="mainNav">
+        <div class="container">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu <i class="fa fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../post.html">文章</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('../img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <div class="post-heading">
+                        <h3>Java多线程基础--线程的操作（1）</h3>
+                        <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
+                        <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+<div id="md-preview" >
+
+<p>线程类具有一些操作方法： <br>
+1)currentThread()方法可返回当前代码被哪个线程调用</p>
+
+<pre>public class MyPrintThread extends Thread {
+    public void run(){
+        System.out.println("Thread-&gt;" + currentThread().getName());
+    }
+}
+
+public static void main(String[] args){
+    MyPrintThread pt = new MyPrintThread();
+    pt.start();
+}
+</pre>
+
+<p>输出：</p>
+
+<pre>Thread-&gt;Thread-0
+</pre>
+
+<p>运行结果说明，运行MyPrintThread的实例线程是Thread-0;也可以使用Thread类的setName()方法，为当前的Thread设置一个名字； <br>
+2）isAlive()方法 <br>
+isAlive() 用来判断当前线程是否处于活动状态。活动状态是指线程已经启动而且尚未终止。线程处于正在运行或准备开始运行的状态，就是“存活”的。</p>
+
+<pre>public class MyPrintThread extends Thread {
+    public void run(){
+        System.out.println("Thread state is alive :" + currentThread().isAlive());
+    }
+}
+</pre>
+
+<p>运行结果:</p>
+
+<pre>Thread state is alive :true
+</pre>
+
+<p>如果我们在线程运行开始之前或者开始之后调用该方法：</p>
+
+<pre>    public static void main(String[] args){
+        MyPrintThread pt = new MyPrintThread();
+        System.out.println("Thread is alive :" + pt.isAlive());
+        pt.start();
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("Thread is alive :" + pt.isAlive());
+
+    }
+</pre>
+
+<p>输出：</p>
+
+<pre>Thread is alive :false
+Thread is alive :false
+</pre>
+
+<p>因为线程pt已经在1秒内运行完，所以线程pt的状态已经不再是存活状态。 <br>
+另外，在使用isAlive()方法时，如果将MyPrintThread实例对象以构造参数的方式传给Thread对象进行start()启动时，运行的结果又是另外一种情况。</p>
+
+<pre>public class MyPrintThread extends Thread {
+    public MyPrintThread(){
+        System.out.println("Thread -&gt;" + this.getName());
+        System.out.println("Thread state is -&gt;" + this.isAlive());
+    }
+    public void run(){
+        System.out.println("Current Thread-&gt;" + currentThread().getName());
+        System.out.println("Current Thread state is alive :" + currentThread().isAlive());
+    }
+}
+</pre>
+
+<p>运行：</p>
+
+<pre>    public static void main(String[] args){
+        Thread pt = new Thread(new MyPrintThread());
+        pt.start();
+    }
+</pre>
+
+<p>输出：</p>
+
+<pre>Thread -&gt;Thread-0
+Thread state is -&gt;false
+Current Thread-&gt;Thread-1
+Current Thread state is alive :true
+</pre>
+
+<p>可见，以MyPrintThread实例作为参数构造的Thread是一个新的线程Thread-1，该线程启动并且执行MyPrintThread实例的run方法，因此currentThread()方法获得的线程也是处于运行状态的Thread-1。 <br>
+3）sleep()方法 <br>
+sleep()方法的作用是在指定的毫秒数内让当前“正在执行的线程”休眠，这个“正在执行的线程”是指this.currentThread()返回的线程。</p>
+
+<pre>public class MyPrintThread extends Thread {
+    public MyPrintThread(){
+    }
+    public void run(){
+        System.out.println("Thread begin");
+        Long start = System.currentTimeMillis();
+        try {
+            sleep(2000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("Thread end, cost:" + (System.currentTimeMillis() - start));
+    }
+}
+</pre>
+
+<p>输出：</p>
+
+<pre>Thread begin
+Thread end, cost:2001
+</pre>
+
+<p>由于sleep()方法的存在，使得run方法停滞了2秒；</p>
+
+<h5>停止线程</h5>
+
+<p>停止一个线程意味着在线程处理完任务之前停掉正在做的操作，也就是放弃掉当前的操作。虽然看起来非常简单，但是必须做好防范措施，以便达到预期效果。 <br>
+停止一个线程可以使用Thread.stop()方法，但最好不用它。因为它虽然可以停止一个正在运行的线程，但是这个方法是不安全的，而且是已经被废弃的方法。 <br>
+大多数停止一个线程的操作使用Thread.interrupt()方法，但是这个方法不会终止一个正在运行的线程，还需要加一个判断才可以完成线程的停止。 <br>
+在Java中，有3种方法可以终止正在运行的线程： <br>
+1）使用退出标志，使线程正常退出，当run方法完成后线程终止； <br>
+2）使用stop方法强行终止线程，但是不推荐使用，可能会产生不可预料的结果； <br>
+3）使用interrupt方法中断线程 <br>
+使用interrupt方法中断线程时，并不能像break操作一样，立刻的展示出效果，它仅仅是在当前线程中打了一个停止的标记，并不是真的停止线程。</p>
+
+<pre>public class InterruptThread extends Thread {
+    public void run(){
+        super.run();
+        for(int i = 0; i &lt; 500000; i ++){
+            System.out.println("i=" + (i ++));
+        }
+    }
+}
+</pre>
+
+<p>运行一下</p>
+
+<pre>Thread pt = new InterruptThread();
+pt.start();
+pt.interrupt();
+</pre>
+
+<p>在线程启动后立刻暂停它，但是运行结果：</p>
+
+<pre>..
+i=499988
+i=499990
+i=499992
+i=499994
+i=499996
+i=499998
+</pre>
+
+<p>从运行结果上看，线程并没有如我们所期望的那样，停下来。 <br>
+在Java中，提供了判断线程是否已经中断的方法： <br>
+1）this.interrupted() 判断当前线程是否已经中断，当前线程指的是运行this.interrupted的线程；执行后将状态标志置清除为false; <br>
+2）this.isInterrupted() 判断线程Thread对象是否已经中断状态，但不清除状态标志；</p>
+
+<pre>    public static void main(String[] args){
+        Thread pt = new InterruptThread();
+        pt.start();
+        pt.interrupt();
+        System.out.println("1 Thread is interrupted :" + pt.interrupted());
+        System.out.println("2 Thread is interrupted :" + pt.interrupted());
+        System.out.println("1 myThread is interrupted :" + pt.isInterrupted());
+        System.out.println("2 myThread is interrupted :" + pt.isInterrupted());
+        Thread.currentThread().interrupt();
+        System.out.println("3 Thread is interrupted :" + pt.interrupted());
+        System.out.println("4 Thread is interrupted :" + pt.interrupted());
+    }
+</pre>
+
+<p>执行结果:</p>
+
+<pre>1 Thread is interrupted :false
+2 Thread is interrupted :false
+1 myThread is interrupted :true
+2 myThread is interrupted :true
+3 Thread is interrupted :true
+4 Thread is interrupted :false
+</pre>
+
+<p>从执行结果看，this.interrupted()检查的是当前线程，而不是指定线程pt，而且第二次调用时中断标志已经清除；this.isInterruped()检查的是指定线程，而且中断标志不会被清除； <br>
+那么有了判定线程是否中断的方法，我们就可以通过检查线程是否被中断的方式停止线程的运行了。</p>
+
+<h5>抛出异常来停止线程</h5>
+
+<p>首先想到的是，通过检查线程工作的异常状态，中断线程的继续执行；</p>
+
+<pre>public class InterruptThread extends Thread {
+    public void run(){
+        super.run();
+        for(int i = 0; i &lt; 500000; i ++){
+            System.out.println("i=" + (i ++));
+            if(this.interrupted()){
+                System.out.println("Thread :" + this.getName() + " has been interrupted");
+                break;
+            }
+        }
+        System.out.println("Thread : " + this.getName() + " end!");
+    }
+}
+</pre>
+
+<p>执行以下：</p>
+
+<pre>    public static void main(String[] args){
+        Thread pt = new InterruptThread();
+        pt.start();
+        try {
+            Thread.currentThread().sleep(100);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        pt.interrupt();
+    }
+</pre>
+
+<p>运行结果：</p>
+
+<pre>i=26580
+i=26582
+i=26584
+i=26586
+i=26588
+i=26590
+i=26592
+Thread :Thread-0 has been interrupted
+Thread : Thread-0 end!
+</pre>
+
+<p>通过判断interrupted()方法+break，可以中断当前的for循环，但是for循环如果后面有程序，仍然会继续执行； <br>
+那么怎样才能完全的终止当前的执行线程呢？可以借助抛出异常的方法。</p>
+
+<pre>public class InterruptThread extends Thread {
+    public void run(){
+        try {
+            super.run();
+            for (int i = 0; i &lt; 500000; i++) {
+                System.out.println("i=" + (i++));
+                if (this.interrupted()) {
+                    System.out.println("Thread :" + this.getName() + " has been interrupted");
+                    throw new InterruptedException("thread has been interrupted");
+                }
+            }
+            System.out.println("Thread : " + this.getName() + " end!");
+        } catch (InterruptedException e) {
+            System.out.println("thread catch");
+            e.printStackTrace();
+        }
+    }
+}
+</pre>
+
+<p>运行结果:</p>
+
+<pre>i=30918
+i=30920
+i=30922
+Thread :Thread-0 has been interrupted
+thread catch
+java.lang.InterruptedException: thread has been interrupted
+    at org.ting.collection.InterruptThread.run(InterruptThread.java:14)
+
+</pre>
+
+<p>通过通过可以看出，使用抛出异常的方法，可以完全的停止线程的运行。</p>
+
+<h5>通过return暂停线程</h5>
+
+<p>将interrupted()方法与return结合使用，也能实现停止线程的效果。</p>
+
+<pre>public class InterruptThread extends Thread {
+    public void run() {
+        super.run();
+        for (int i = 0; i &lt; 10000; i++) {
+            System.out.println("i-&gt;" + (i++));
+            if (this.interrupted()) {
+                System.out.println("Thread stop");
+                return;
+            }
+        }
+        System.out.println("Thread end");
+    }
+}
+</pre>
+
+<p>运行一下：</p>
+
+<pre>i-&gt;798
+i-&gt;800
+i-&gt;802
+i-&gt;804
+i-&gt;806
+i-&gt;808
+Thread stop
+</pre>
+
+<p>interrupted()方法与return结合使用，可以将线程终止，但是通过抛出异常的方法实现线程的停止，catch块中还可以将异常向上抛，使得线程停止的事件得以传播；</p>
+
+<h5>总结</h5>
+
+<p>本文介绍了线程的常用方法，着重介绍了停止线程操作方法，不建议使用stop()方法，使用interrupt()方法要结合interrupted()状态判断和抛出异常的方式来终止线程的运行；</p></div>
+</div>
+        </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="copyright text-muted">Copyright &copy; Ting Blog 2017</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/tether.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="../js/clean-blog.js"></script>
+
+</body>
+
+</html>

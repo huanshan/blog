@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ting Blog</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../css/clean-blog.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+    <!-- Temporary navbar container fix -->
+    <style>
+    .navbar-toggler {
+        z-index: 1;
+    }
+    
+    @media (max-width: 576px) {
+        nav > .container {
+            width: 100%;
+        }
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed-top navbar-toggleable-md navbar-light" id="mainNav">
+        <div class="container">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu <i class="fa fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../post.html">文章</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('../img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <div class="post-heading">
+                        <h3>java多线程基础--Synchronize同步（1）</h3>
+                        <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
+                        <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+<div id="md-preview">
+
+<p>如果多个线程同时访问1个对象中的实例变量，则有可能会出现线程不安全的问题。如果对象中有多个实例变量，则运行的结果有可能会出现交叉的情况。 <br>
+创建一个线程非安全的对象：</p>
+
+<pre>public class UnsafeObj {
+    private String key ;
+    private Integer value;
+    public void setKey(String key){
+        this.key = key;
+    }
+    public void print(){
+        if(key.equals("a")){
+            value = 100;
+        } else {
+            value = 200;
+        }
+        System.out.println("key -&gt;" + key);
+        try {
+            Thread.currentThread().sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("value-&gt;" + value);
+    }
+}
+</pre>
+
+<p>使用多个线程同时操作这个非安全的对象的一个实例：</p>
+
+<pre>public class PrintThread1 extends Thread {
+    private UnsafeObj obj;
+    public PrintThread1(UnsafeObj obj){
+        this.obj = obj;
+    }
+    public void run(){
+        obj.setKey("a");
+        obj.print();
+    }
+}
+</pre>
+
+<pre>public class PrintThread2 extends Thread {
+    private UnsafeObj obj;
+    public PrintThread2(UnsafeObj obj){
+        this.obj = obj;
+    }
+    public void run(){
+        obj.setKey("b");
+        obj.print();
+    }
+}
+</pre>
+
+<p>运行的结果：</p>
+
+<pre>key -&gt;a
+key -&gt;b
+value-&gt;200
+value-&gt;200
+</pre>
+
+<p>我们期望的逻辑是key='a'是，value=100，却输出了key='b'的value值；要解决这个问题，就需要对操作方法print()进行同步处理。</p>
+
+<pre>public class SafeObj {
+    private String key ;
+    private Integer value;
+    public void setKey(String key){
+        this.key = key;
+    }
+    public synchronized void print(){
+        if(key.equals("a")){
+            value = 100;
+        } else {
+            value = 200;
+        }
+        System.out.println("key -&gt;" + key);
+        try {
+            Thread.currentThread().sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("value-&gt;" + value);
+    }
+
+}
+</pre>
+
+<p>输出：</p>
+
+<pre>key -&gt;a
+value-&gt;100
+key -&gt;b
+value-&gt;200
+</pre>
+
+<p>通过synchronized关键字，解决了多个线程操作同一个实例时出现的结果异常的问题。 <br>
+如果多个线程操作的是同一个对象的实例的不同方法，是否是线程安全的呢？</p>
+
+<pre>public class SafeObj {
+    private String key ;
+    private Integer value;
+    public void setKey(String key){
+        this.key = key;
+    }
+    public synchronized void print(){
+        if(key.equals("a")){
+            value = 100;
+        } else {
+            value = 200;
+        }
+        System.out.println("key -&gt;" + key);
+        try {
+            Thread.currentThread().sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("value-&gt;" + value);
+    }
+
+    public void printB(){
+        if(key.equals("a")){
+            value = 100;
+        } else {
+            value = 200;
+        }
+        System.out.println("key -&gt;" + key);
+        try {
+            Thread.currentThread().sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("value-&gt;" + value);
+    }
+}
+</pre>
+
+<p>给线程安全类SafeObj添加一个非synchronized方法，线程Thread2调用该方法</p>
+
+<pre>public class PrintThread2 extends Thread {
+    private SafeObj obj;
+    public PrintThread2(SafeObj obj){
+        this.obj = obj;
+    }
+    public void run(){
+        obj.setKey("b");
+        obj.printB();
+    }
+}
+</pre>
+
+<p>运行结果：</p>
+
+<pre>key -&gt;a
+key -&gt;b
+value-&gt;200
+value-&gt;200
+</pre>
+
+<p>从运行结果，看出线程安全类SafeObj变成了线程不安全的了。这是因为方法printB()并没有进行同步处理，所以线程Thread2执行该方法并不会受print()方法的同步机制的限制。 <br>
+若是将printB()方法也加上同步处理，</p>
+
+<pre>key -&gt;a
+value-&gt;100
+key -&gt;b
+value-&gt;200
+</pre>
+
+<p>那么其效果等同于调同一个方法。 <br>
+这是因为synchronized方法会占有对象的对象锁，因此printA()方法在执行时，printB()会等待锁释放，因此只有printA()方法执行完并释放锁后，printB()方法才能运行。</p>
+
+<h5>脏读</h5>
+
+<p>为了避免数据出现交叉情况，会使用sysnchronized关键字进行同步处理，但是如果只在赋值时进行了同步，在取值时有可能出现一些意想不到的以外，这种情况就是脏读。发生脏读的情况是在读取实例变量时，该值已经被其它线程更改了。</p>
+
+<p>显然，a的value值发生了改变，在设置完等待获取的时间内，被线程b线程修改了。 <br>
+为了避免脏读，</p>
+
+<pre>public class SafeObj {
+    private String key = "A";
+    private Integer value = 100;
+    public synchronized void setkeyValue(String key, Integer value){
+        System.out.println("key-&gt;" + key + ", set value -&gt; " + value);
+        this.key = key;
+        try {
+            Thread.currentThread().sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        this.value = value;
+    }
+    public String getKey(){
+        return key;
+    }
+    public Integer getValue(){
+        return value;
+    }
+}
+public class PrintThread1 extends Thread {
+    private SafeObj obj;
+    public PrintThread1(SafeObj obj){
+        this.obj = obj;
+    }
+    public void run(){
+        obj.setkeyValue("b", 200);
+        System.out.println("key-&gt;b, value-&gt;" + obj.getValue());
+    }
+}
+</pre>
+
+<p>运行一下：</p>
+
+<pre>    public static void main(String[] args){
+        SafeObj obj = new SafeObj();
+        Thread td1 = new PrintThread1(obj);
+        td1.start();
+        try {
+            Thread.currentThread().sleep(100);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("get key-&gt;" + obj.getKey()
+                + ", value-&gt;" + obj.getValue());
+    }
+</pre>
+
+<p>输出结果:</p>
+
+<pre>key-&gt;b, set value -&gt; 200
+get key-&gt;b, value-&gt;100
+key-&gt;b, value-&gt;200
+</pre>
+
+<p>通过结果看出，线程Thread1在setKeyValue时，并没有控制getValue()方法，因此可以随时获取实例的value值，若是在set操作还未完成时，便获取value值，得到的便是一个脏数据。 <br>
+为了避免脏数据的产生，应该避免在set操作的过程中进行get操作，最好的办法便是给getValue()加上一个synchronized的关键字。</p>
+
+<pre>    public synchronized Integer getValue(){
+        return value;
+    }
+</pre>
+
+<p>结果变为了:</p>
+
+<pre>key-&gt;b, set value -&gt; 200
+key-&gt;b, value-&gt;200
+get key-&gt;b, value-&gt;200
+</pre>
+
+<p>消除了脏数据，得到了我们期望的值。</p>
+
+<h5>总结</h5>
+
+<p>当前程A调用anyObject对象加入synchronized关键字的X方法时，A线程就获得了X方法锁，更准确的说是获得了对象的锁，所以其它线程必须等A线程执行完毕才可以调用X方法，但是B线程可以随意调用其它的非synchronized同步方法。 <br>
+而如果B线程调用了synchronized关键字声明的非X方法时，必须等A线程将X方法执行完，也就是释放对象锁后，才可以调用。这时A线程已经执行完一个完整的任务，也就避免了产生脏读。</p><span class="diff"></span></div>
+</div>
+        </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="copyright text-muted">Copyright &copy; Ting Blog 2017</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/tether.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="../js/clean-blog.js"></script>
+
+</body>

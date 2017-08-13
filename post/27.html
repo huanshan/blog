@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ting Blog</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../css/clean-blog.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+    <!-- Temporary navbar container fix -->
+    <style>
+    .navbar-toggler {
+        z-index: 1;
+    }
+    
+    @media (max-width: 576px) {
+        nav > .container {
+            width: 100%;
+        }
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed-top navbar-toggleable-md navbar-light" id="mainNav">
+        <div class="container">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu <i class="fa fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../post.html">文章</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('../img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <div class="post-heading">
+                        <h3>java多线程基础--关于死锁</h3>
+                        <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
+                        <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+<div id="md-preview">
+
+<p>在Java中，多线程的使用在某些情况下大大提高了程序的运行效率，但是如果多个线程公用一个对象监视器，如果等待根本不可能释放的锁，从而导致所有的任务都无法继续完成，使程序处于假死状态。在多线程中，死锁是必须避免的。 <br>
+看一下发生死锁的例子</p>
+
+<pre>public class DeathObj {
+    private String lock1 = new String();
+    private String lock2 = new String();
+    public void serviceA(){
+        Thread td = Thread.currentThread();
+        synchronized (lock1) {
+            System.out.println("Thread-&gt;" + td.getName() + ", lock1");
+            try {
+                td.sleep(3000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            synchronized (lock2){
+                System.out.println("Thread-&gt;" + td.getName() + ", lock2");
+            }
+        }
+    }
+
+    public void serviceB(){
+        Thread td = Thread.currentThread();
+        synchronized (lock2) {
+            System.out.println("Thread-&gt;" + td.getName() + ", lock2");
+            try {
+                td.sleep(3000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            synchronized (lock1){
+                System.out.println("Thread-&gt;" + td.getName() + ", lock1");
+            }
+        }
+
+    }
+}
+</pre>
+
+<p>构造一个Thread类</p>
+
+<pre>public class DeathThread extends Thread{
+    private String name;
+    private DeathObj obj;
+
+    public DeathThread(String name, DeathObj obj){
+        this.name = name;
+        this.obj = obj;
+    }
+
+    public void run(){
+        this.setName(this.name);
+        if(name.equals("A")){
+            obj.serviceA();
+        } else {
+            obj.serviceB();
+        }
+    }
+}
+</pre>
+
+<p>运行一下</p>
+
+<pre>    public static void main(String[] args) {
+        DeathObj obj = new DeathObj();
+        Thread tda = new DeathThread("A", obj);
+        Thread tdb = new DeathThread("B", obj);
+        tda.start();
+        try {
+            Thread.currentThread().sleep(300);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        tdb.start();
+    }
+}
+</pre>
+
+<p>运行结果:</p>
+
+<pre>Thread-&gt;A, lock1
+Thread-&gt;B, lock2
+</pre>
+
+<p>在DeathObj中，serviceA()方法拥有两个代码块，其对象监视器分别是lock1和lock2，并且lock2控制的代码块是在lock1控制的代码块的内部，这就表示，在开始运行lock1控制的代码块的时候，线程要拿到lock1的锁，当运行到lock2控制的代码块的时候，线程要拿到lock2的锁，程序才能继续往下进行。seviceB()方法也用有两个代码块，但是同步代码块的锁包含关系正好相反，在开始运行lock2控制的代码块的时候，线程要拿到lock2的锁，当运行到lock1控制的代码块的时候，线程要拿到lock1的锁，程序才能继续往下进行。当serviceA()方法和serviceB()方法先后运行，serviceA()要获取lock2锁，但是serviceB()并没有释放lock2锁，因为它在等lock1锁，这样serviceA()和serviceB()始终都无法继续执行，始终处于锁等待状态。 <br>
+如果使用jstack dump程序堆的状态，可以很明显发现两个死锁:</p>
+
+<pre>"B@467" prio=5 tid=0xe nid=NA waiting for monitor entry
+  java.lang.Thread.State: BLOCKED
+     blocks A@466
+     waiting for A@466 to release lock on &lt;0x1da&gt; (a java.lang.String)
+      at org.ting.collection.DeathObj.serviceB(DeathObj.java:34)
+      - locked &lt;0x1d9&gt; (a java.lang.String)
+      at org.ting.collection.DeathThread.run(DeathThread.java:20)
+"A@466" prio=5 tid=0xd nid=NA waiting for monitor entry
+  java.lang.Thread.State: BLOCKED
+     blocks B@467
+     waiting for B@467 to release lock on &lt;0x1d9&gt; (a java.lang.String)
+      at org.ting.collection.DeathObj.serviceA(DeathObj.java:19)
+      - locked &lt;0x1da&gt; (a java.lang.String)
+      at org.ting.collection.DeathThread.run(DeathThread.java:18)
+
+</pre>
+
+<p>本文的实例使用的是同步代码块的相互嵌套，来构造一个死锁。实际上不使用嵌套的synchronized代码结构也会出现死锁。在程序设计中，要避免双方互相持有对方锁的情况。 <br>
+此外，使用suspend()方法 ，暂停当前线程，会造成线程锁的不能释放，进行出现程序死锁。</p></span></div>
+</div>
+        </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="copyright text-muted">Copyright &copy; Ting Blog 2017</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/tether.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="../js/clean-blog.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ting Blog</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../css/clean-blog.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+    <!-- Temporary navbar container fix -->
+    <style>
+    .navbar-toggler {
+        z-index: 1;
+    }
+    
+    @media (max-width: 576px) {
+        nav > .container {
+            width: 100%;
+        }
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed-top navbar-toggleable-md navbar-light" id="mainNav">
+        <div class="container">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu <i class="fa fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../post.html">文章</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('../img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <div class="post-heading">
+                        <h3>Java多线程基础--线程的操作（2）</h3>
+                        <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
+                        <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+<div id="md-preview">
+
+<p>使用intterrupt()方法和线程是否终止判断方法interrupted()方法，通过抛出异常的方式，能够中断当前线程的执行； <br>
+那么，能否中断一个处于sleep()状态的线程呢？</p>
+
+<h5>停止sleep状态的线程</h5>
+
+<pre>public class InterruptThread extends Thread {
+    public void run(){
+        try {
+            super.run();
+            this.sleep(3000);
+            System.out.println("Thread end");
+        } catch (InterruptedException e) {
+            System.out.println("thread catch : interrupted");
+            e.printStackTrace();
+        }
+    }
+}
+</pre>
+
+<p>执行以下</p>
+
+<pre>    public static void main(String[] args){
+        Thread pt = new InterruptThread();
+        pt.start();
+        try {
+            Thread.currentThread().sleep(100);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        pt.interrupt();
+    }
+</pre>
+
+<p>输出结果：</p>
+
+<pre>thread catch : interrupted
+java.lang.InterruptedException: sleep interrupted
+    at java.lang.Thread.sleep(Native Method)
+    at org.ting.collection.InterruptThread.run(InterruptThread.java:10)
+</pre>
+
+<p>因此，处理sleep状态的线程，通过interrupt()方法，可以直接被终止； <br>
+但是需要注意的是，如果在线程进入sleep状态之前，进行了interrupt操作，就不会对线程sleep操作之前的操作起作用了。</p>
+
+<pre>public class InterruptThread extends Thread {
+    public void run(){
+        try {
+            super.run();
+            for(int i =0 ; i &lt;10000; i++){
+                System.out.println("i-&gt;" + (i++));
+            }
+            this.sleep(3000);
+            System.out.println("Thread end");
+        } catch (InterruptedException e) {
+            System.out.println("thread catch : interrupted");
+            e.printStackTrace();
+        }
+    }
+}
+</pre>
+
+<p>运行结果为：</p>
+
+<pre>i-&gt;9990
+i-&gt;9992
+i-&gt;9994
+i-&gt;9996
+i-&gt;9998
+java.lang.InterruptedException: sleep interrupted
+    at java.lang.Thread.sleep(Native Method)
+    at org.ting.collection.InterruptThread.run(InterruptThread.java:13)
+thread catch : interrupted
+</pre>
+
+<h5>暴力停止</h5>
+
+<p>直接使用stop()方法，停止线程的方式非常暴力的。</p>
+
+<pre>public class StopThread extends Thread {
+    public void run(){
+        int i =0;
+        while(true){
+            System.out.println(" i -&gt;" + (i ++));
+            try {
+                this.sleep(1000);
+            } catch (InterruptedException e) {
+                System.out.println("Thread interrupt catch");
+                e.printStackTrace();
+            }
+        }
+    }
+}
+</pre>
+
+<p>运行一下:</p>
+
+<pre>    public static void main(String[] args){
+        Thread pt = new StopThread();
+        pt.start();
+        try {
+            Thread.currentThread().sleep(8000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        pt.stop();
+    }
+</pre>
+
+<p>执行结果:</p>
+
+<pre> i -&gt;0
+ i -&gt;1
+ i -&gt;2
+ i -&gt;3
+ i -&gt;4
+ i -&gt;5
+ i -&gt;6
+ i -&gt;7
+</pre>
+
+<p>从执行结果来看，stop()方法能够停止线程的继续执行。但是该方法已经被废弃，因为如果强制让线程停止，则有可以能使一些请理性的工作无法操作。另一个情况就是对锁定的对象进行了强制解锁，导致数据得不到同步处理，处理数据不一致的问题。</p>
+
+<h5>强行解锁的不良后果</h5>
+
+<p>使用stop()释放锁将会给数据造成一致性的破坏，如果出现这种情况，程序处理的数据就有可能遭到破坏，最终导致程序执行的流程错误。</p>
+
+<pre>public class User {
+    private String name;
+    private String password;
+
+    public User(String name, String password){
+        this.name = name;
+        this.password  = password;
+    }
+
+    public String getName(){
+        return name;
+    }
+
+    public String getPassword(){
+        return password;
+    }
+
+    public synchronized void setUser(String name, String password) {
+        this.name = name;
+        try {
+            Thread.currentThread().sleep(100000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        this.password = password;
+    }
+}
+public class MyPrintThread extends Thread {
+    User user;
+    public MyPrintThread(User user){
+        this.user = user;
+    }
+    public void run(){
+       user.setUser("b", "bb");
+    }
+}
+</pre>
+
+<p>运行：</p>
+
+<pre>    public static void main(String[] args){
+        User user = new User("a", "aa");
+        Thread pt = new MyPrintThread(user);
+        pt.start();
+        try {
+            Thread.currentThread().sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        pt.stop();
+        System.out.println("user is " + user.getName() + ", password " + user.getPassword());
+    }
+</pre>
+
+<p>输出：</p>
+
+<pre>user is b, password aa
+</pre>
+
+<p>由于stop方法，强制的停止了当前的操作，导致结果出现了我们不期望出现的结果。</p>
+
+<h5>暂停线程</h5>
+
+<p>jdk提供了暂停线程的方法suspend()和恢复线程的方法resume，但是由于使用suspend方法时，并没有释放掉占有的锁，因此可能会导致其他线程的阻塞。 <br>
+因此，暂停线程执行时，推荐的方法是yield()方法。yield()方法的作用是放弃当前的cpu资源，将它让给其它的任务去占有cpu执行时间。但是放弃的时间不确定，有可能刚刚放弃，马上又获得cpu的时间片。</p>
+
+<pre>public class YieldThread extends Thread {
+    public void run(){
+        Long start = System.currentTimeMillis();
+        for(int i =0; i &lt; 100000; i++){
+            this.yield();
+            System.out.println("i-&gt;" + i);
+        }
+        System.out.println("cost time : " + (System.currentTimeMillis() - start) + " ms");
+    }
+}
+public static void main(String[] args){
+    Thread td = new YieldThread();
+    td.start();
+}
+</pre>
+
+<p>运行结果：</p>
+
+<pre>//开启yield
+i-&gt;99997
+i-&gt;99998
+i-&gt;99999
+cost time : 1192 ms
+//关闭yield
+i-&gt;99997
+i-&gt;99998
+i-&gt;99999
+cost time : 714 ms
+</pre>
+
+<p>使用了yield方法，线程的执行效率明显降低；</p>
+
+<h5>线程的优先级</h5>
+
+<p>在操作系统中，线程可以划分优先级，优先级越高的线程得到的cpu资源就越多。cpu会优先执行优先级比较高的任务； <br>
+在Java中，线程的优先级划分为1-10个等级，如果小于1或者大于10，java都会抛出threw new IllegalArgumentExcepetion错误； <br>
+Java中，使用3个常量预置定义优先级的值；</p>
+
+<pre>public final static int MIN_PRIORITY = 1;
+public final static int NORMAL_PRIORITY = 5;
+public final static int MAX_PRIORITY = 10;
+</pre>
+
+<p>在java中，如果线程A中启动线程B，那么B线程的优先级与A线程是一样的；虽然可以通过setPriority()方法设置线程的优先级，但是只能说明cpu会优先执行优先级比较高的线程，但并不是说高优先级的线程执行完毕，再执行低优先级的线程。</p>
+
+<pre>public class PriorityThread extends Thread {
+    public PriorityThread(int priority){
+        this.setPriority(priority);
+        this.setName("priority_" + priority + "_thread");
+    }
+    public void run() {
+        int runTime = 0;
+        while (true) {
+            int count =0;
+            for(int i =0; i &lt;100000; i++){
+                count ++;
+            }
+            runTime ++;
+            System.out.println("Thread-&gt; " + this.getName() + "-&gt;runtime-&gt;" + runTime);
+        }
+    }
+}
+</pre>
+
+<p>执行</p>
+
+<pre>    public static void main(String[] args){
+        Thread t1 = new PriorityThread(1);
+        Thread t2 = new PriorityThread(2);
+        Thread t3 = new PriorityThread(3);
+        Thread t4 = new PriorityThread(4);
+        Thread t5 = new PriorityThread(5);
+        Thread t6 = new PriorityThread(6);
+        Thread t7 = new PriorityThread(7);
+        Thread t8 = new PriorityThread(8);
+        Thread t9 = new PriorityThread(9);
+        Thread t10 = new PriorityThread(10);
+        t1.start();
+        t2.start();
+        t3.start();
+        t4.start();
+        t5.start();
+        t6.start();
+        t7.start();
+        t8.start();
+        t9.start();
+        t10.start();
+    }
+</pre>
+
+<p>运行一段时间，查看输出结果</p>
+
+<pre>Thread-&gt; priority_10_thread-&gt;runtime-&gt;79525
+Thread-&gt; priority_9_thread-&gt;runtime-&gt;73023
+Thread-&gt; priority_8_thread-&gt;runtime-&gt;65772
+Thread-&gt; priority_7_thread-&gt;runtime-&gt;58419
+Thread-&gt; priority_6_thread-&gt;runtime-&gt;52088
+...
+Thread-&gt; priority_1_thread-&gt;runtime-&gt;22197
+</pre>
+
+<p>通过运行结果可以看出，优先级设置的越大，线程运行的概率就越大；但是并不代表高优先级的线程全部执行完才执行低优先级的线程；</p>
+
+<h5>守护线程</h5>
+
+<p>java线程中有两种线程，一种是用户线程，一种是守护线程； <br>
+守护线程是一种特殊的线程，它的生命周期与用户线程有关系，当进行中不存在非守护线程时，守护线程会自动销毁。一个典型的守护线程是垃圾回收。</p>
+
+<h5>总结</h5>
+
+<p>如果暴力的使用stop()方法停止线程的运行，使用suspend()方法暂停线程，都会产生不可预知的结果，如果想让出当前线程占有的锁，可以使用yield()方法。通过设置线程的优先级，可以让cpu以更大的概率优先运行优先级比较高的线程，守护线程的生命收起与用户线程有关，用户线程都结束时，守护线程也会销毁。</p></div>
+</div>
+        </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="copyright text-muted">Copyright &copy; Ting Blog 2017</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/tether.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="../js/clean-blog.js"></script>
+
+</body>
+
+</html>

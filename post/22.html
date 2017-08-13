@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ting Blog</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../css/clean-blog.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+    <!-- Temporary navbar container fix -->
+    <style>
+    .navbar-toggler {
+        z-index: 1;
+    }
+    
+    @media (max-width: 576px) {
+        nav > .container {
+            width: 100%;
+        }
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed-top navbar-toggleable-md navbar-light" id="mainNav">
+        <div class="container">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu <i class="fa fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../post.html">文章</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('../img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <div class="post-heading">
+                        <h3>Java多线程基础--开启一个线程</h3>
+                        <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
+                        <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+<div id="md-preview" >
+
+<h5>什么是进程</h5>
+
+<p>进程是操作系统结构的基础，是一次程序的执行，是一个程序及其数据在处理机上顺序执行时所发生的活动，是程序在一个数据集合上运行的过程，是系统进行资源分配和调度的一个独立单位。</p>
+
+<h5>什么是线程</h5>
+
+<p>线程可以理解为在进行中独立运行的子任务。使用多线程，可以提高多核心CPU的使用率，进而可以调高进程的整体性能。</p>
+
+<h5>在Java运行一个线程</h5>
+
+<p>一个运行的程序至少会有一个线程在同运行，在Java中，调用public static void main()方法的就是一个有JVM创建的线程。</p>
+
+<pre>    public class MainThreadTest{
+        public static void main(String[] args){
+            System.out.println(Thread.currentThread().getName());
+        }
+    }
+</pre>
+
+<p>输出</p>
+
+<pre>main
+</pre>
+
+<p>即当前是一个叫做main的线程调用了main()方法。</p>
+
+<h5>实现一个线程</h5>
+
+<p>在JDK中，已经自带了对多线程技术的支持，可以方便的进行多线程编程。实现多线程的方式主要有两种： <br>
+1）继承Thread类 <br>
+2）实现Runnable接口 <br>
+实际上，Thread是继承了Runnable接口的。但是，由于Java是单继承父类的，因此继承Thread类实现的线程不能进行多继承，而接口不受控制。因此，如果需要多继承时，Runnable是合适的选择。 <br>
+1 继承Thread类，创建一个线程 <br>
+创建一个自定义的线程类MyThread，继承父类Thread，并且重载父类的函数run方法。run方法就是线程启动时，运行的方法。</p>
+
+<pre>public class MyThread extends Thread {
+    public void run(){
+        System.out.println("my thread run");
+    }
+}
+</pre>
+
+<p>值main方法中启动MyThread的一个实例:</p>
+
+<pre>    MyThread mt = new MyThread();
+    mt.start();
+    System.out.println("run over");
+</pre>
+
+<p>查看运行结果：</p>
+
+<pre>    run over!
+    my thread run
+</pre>
+
+<p>可以看出，MyThread的实例虽然运行了，但是要晚于后面的Main()方法里的剩余操作，这说明多线程的运行时非阻塞的，在使用多线程时，代码的运行结果与执行顺序是与调用顺序无关的。 <br>
+线程是一个子任务，CPU以随机的调用线程中的run方法，所以会出现"run over"在前的结果。 <br>
+如果我们创建多个MyThread实例，并且依次启动，那么其执行顺序是否是一致的呢？ <br>
+修改一个MyThread类:</p>
+
+<pre>public class MyThread extends Thread {
+    private Integer order;
+    public MyThread (Integer order){
+        this.order = order;
+    }
+    public void run(){
+        System.out.println("my thread " + order + " run");
+    }
+}
+</pre>
+
+<p>创建多个MyThread实例，依次运行：</p>
+
+<pre>    public static void main(String[] args){
+        MyThread t1 = new MyThread(1);
+        t1.start();
+        MyThread t2 = new MyThread(2);
+        t2.start();
+        MyThread t3 = new MyThread(3);
+        t3.start();
+        MyThread t4 = new MyThread(4);
+        t4.start();
+        MyThread t5 = new MyThread(5);
+        t5.start();
+        MyThread t6 = new MyThread(6);
+        t6.start();
+        MyThread t7 = new MyThread(7);
+        t7.start();
+        MyThread t8 = new MyThread(8);
+        t8.start();
+        MyThread t9 = new MyThread(9);
+        t9.start();
+        MyThread t10 = new MyThread(10);
+        t10.start();
+        System.out.println("run over!");
+    }
+</pre>
+
+<p>输出:</p>
+
+<pre>my thread 1 run
+my thread 5 run
+my thread 2 run
+run over!
+my thread 6 run
+my thread 4 run
+my thread 10 run
+my thread 8 run
+my thread 3 run
+my thread 9 run
+my thread 7 run
+</pre>
+
+<p>可见，线程的运行顺序与其启动顺序不存在对应关系。</p>
+
+<ol>
+<li>实现Runable接口，创建一个线程类 <br>
+如果说欲创建的线程类已经有一个父类了，这时，就需要实现Runnable接口来创建线程类了。</li>
+</ol>
+
+<pre>public class MyRunable implements Runnable {
+
+    @Override
+    public void run() {
+        System.out.println("my runnable run");
+    }
+}
+</pre>
+
+<p>实现Runnable接口的线程类只是一个任务类，它不具有线程启动的功能。要在一个线程中运行该线程类，还要将其作为Thread的构造函数的参数创建一个Thread实例。</p>
+
+<pre>    public static void main(String[] args) {
+        MyRunable mr = new MyRunable();
+        Thread t = new Thread(mr);
+        t.start();
+        System.out.println("run over");
+    }
+</pre>
+
+<p>当然，Thread的构造函数有以下几种:</p>
+
+<pre>public Thread();
+public Thread(Runnable target);
+public Thread(ThreadGroup group, Runnable target);
+public Thread(String name);
+public Thread(ThreadGroup group, String name);
+public Thread(Runnable target, String name);
+public Thread(ThreadGroup group, Runnable target, String name);
+public Thread(ThreadGroup group, Runnable target, String name, long stackSize);
+</pre>
+
+<p>因为MyThread继承了Runnable接口，所以也可以通过</p>
+
+<pre>Thread th = new Thread(new MyThread(1));
+</pre>
+
+<p>来创建一个新的线程；</p>
+
+<h5>实例变量与线程安全</h5>
+
+<p>自定义线程类中的实例变量针对其他线程可以有共享与不共享之分，这在多个线程交互时需要特别的注意。 <br>
+1）数据不共享 <br>
+数据不共享时，各个线程之间虽然同是运行，但是在数据层面是相互独立，互补影响的。 <br>
+例如，上面实现MyThread类，其实例变量order，是在创建实例时初始化的，各个线程之前独立操作互补影响。 <br>
+2）数据共享时 <br>
+修改一个MyThread，将order变量放于方法区，各个线程共享：</p>
+
+<pre>public class MyThread extends Thread {
+    private static Integer order = 0;
+    public void run(){
+        try {
+            this.sleep((10 - order) * 100);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        order ++;
+        System.out.println("my thread " + order + " run");
+    }
+}
+</pre>
+
+<p>运行结果为：</p>
+
+<pre>run over!
+my thread 2 run
+my thread 3 run
+my thread 4 run
+my thread 2 run
+my thread 5 run
+my thread 6 run
+my thread 9 run
+my thread 9 run
+my thread 7 run
+my thread 7 run
+</pre>
+
+<p>发现，在多个线程之间，共享变量order的值出现了重复，但是按照本意，order的值应当是递增而且不会出现重复的。 <br>
+因为多个线程同时对一个变量进行操作，导致出现了与我们期望不一致的结果，那么这个order就可以认为是“线程不安全的”。 <br>
+为了解决order变量的线程不安全问题，我们需要在对其进行操作的地方添加synchronized同步处理：</p>
+
+<pre>public class MyThread extends Thread {
+    private static Integer order = 0;
+    public void run(){
+        try {
+            this.sleep((10 - order) * 100);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        synchronized (this.getClass()){
+            order++;
+            System.out.println("my thread " + order + " run");
+        }
+    }
+}
+</pre>
+
+<p>运行结果:</p>
+
+<pre>run over!
+my thread 1 run
+my thread 2 run
+my thread 3 run
+my thread 4 run
+my thread 5 run
+my thread 6 run
+my thread 7 run
+my thread 8 run
+my thread 9 run
+my thread 10 run
+</pre>
+
+<p>这里只是简单的采用了sychronized关键字，进行了同步处理，发现结果与预期的一致，解决了数据共享时存在的冲突问题。 <br>
+关于synchronized<span class="diff">关键字，后面进行详细的描述。</span></p>
+
+<h5>总结</h5>
+
+<p>线程是在进程内部可以认为是并发运行的子任务 ，创建一个线程类的方法有两种，实现Runnable接口或者继承Thread类。线程的运行时间与启动时间无必然的关系。线程之间尽量不要存在数据共享，如果存在，必须要对共享的数据进行同步处理。</p></div>
+</div>
+        </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="copyright text-muted">Copyright &copy; Ting Blog 2017</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/tether.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="../js/clean-blog.js"></script>
+
+</body>
+
+</html>
