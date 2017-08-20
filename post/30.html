@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ting Blog</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../css/clean-blog.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+    <!-- Temporary navbar container fix -->
+    <style>
+    .navbar-toggler {
+        z-index: 1;
+    }
+    
+    @media (max-width: 576px) {
+        nav > .container {
+            width: 100%;
+        }
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed-top navbar-toggleable-md navbar-light" id="mainNav">
+        <div class="container">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu <i class="fa fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../post.html">文章</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('../img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <div class="post-heading">
+                        <h3>java多线程基础--生产者/消费者模式</h3>
+                        <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
+                        <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+<div id="md-preview">
+
+<p>等待/通知模式最经典的案例就是“生产者/消费者”模式。</p>
+
+<h5>单生产者与单消费者</h5>
+
+<p>创建值类:</p>
+
+<pre>public class ValueObj {
+    public static String value = "";
+}
+</pre>
+
+<p>创建生产者:</p>
+
+<pre>public class Producer {
+    private String lock;
+    public Producer(String lock){
+        super();
+        this.lock = lock;
+    }
+    public void setValue(){
+        try{
+            synchronized (lock){
+                if(!ValueObj.value.equals("")){
+                    lock.wait();
+                }
+                String value = System.currentTimeMillis()
+                        + "_" + System.nanoTime();
+                System.out.println("set value -&gt;" + value);
+                ValueObj.value = value;
+                lock.notify();
+            }
+        } catch(InterruptedException e){
+            e.printStackTrace();
+        }
+    }
+}
+</pre>
+
+<p>创建消费者:</p>
+
+<pre>public class Customer {
+    public String lock;
+    public Customer(String lock){
+        super();
+        this.lock = lock;
+    }
+    public void getValue(){
+        try{
+            synchronized (lock){
+                if(ValueObj.value.equals("")){
+                    lock.wait();
+                }
+                System.out.println("get value -&gt;" + ValueObj.value);
+                ValueObj.value="";
+                lock.notify();
+            }
+        } catch (InterruptedException e){
+            e.printStackTrace();
+        }
+    }
+}
+</pre>
+
+<p>创建测试类：</p>
+
+<pre>public class ProdCustTest {
+    public static void main(String[] args){
+        String lock = new String("lock");
+        Producer pd = new Producer(lock);
+        Customer ct = new Customer(lock);
+        Runnable rp = ()-&gt; {
+            while (true) {
+                pd.setValue();
+                try {
+                    Thread.currentThread().sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        Runnable rc = ()-&gt;{
+            while(true){
+                ct.getValue();
+                try {
+                    Thread.currentThread().sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        new Thread(rp).start();
+        new Thread(rc).start();
+
+    }
+}
+</pre>
+
+<p>运行结果:</p>
+
+<pre>set value -&gt;1502717700857_123764687683431
+get value -&gt;1502717700857_123764687683431
+set value -&gt;1502717701859_123765688984661
+get value -&gt;1502717701859_123765688984661
+set value -&gt;1502717702859_123766688885596
+get value -&gt;1502717702859_123766688885596
+</pre>
+
+<p>一个生产者与一个消费者，生产者线程与消费者线程交替执行。 <br>
+修改一下，在上面的基础上设计多个生产者和多个消费者:</p>
+
+<pre>public class Producer {
+    private String lock;
+    public Producer(String lock){
+        super();
+        this.lock = lock;
+    }
+    public void setValue(){
+        try{
+            synchronized (lock){
+                while(!ValueObj.value.equals("")){
+                    System.out.println("producer-&gt;" + Thread.currentThread().getName()
+                            + "-&gt;WAITING");
+                    lock.wait();
+                }
+                Thread.currentThread().sleep(new Random().nextInt(1000));
+                System.out.println("producer-&gt;" + Thread.currentThread().getName()
+                        + "-&gt;RUNNABLE");
+                String value = System.currentTimeMillis()
+                        + "_" + System.nanoTime();
+                System.out.println("producer-&gt;" + Thread.currentThread().getName()
+                        + " set value -&gt;" + value);
+                ValueObj.value = value;
+                lock.notify();
+            }
+        } catch(InterruptedException e){
+            e.printStackTrace();
+        }
+    }
+}
+</pre>
+
+<pre>public class Customer {
+    public String lock;
+    public Customer(String lock){
+        super();
+        this.lock = lock;
+    }
+    public void getValue(){
+        try{
+            synchronized (lock){
+                while(ValueObj.value.equals("")){
+                    System.out.println("customer-&gt;" + Thread.currentThread().getName()
+                            + "-&gt;WAITING");
+                    lock.wait();
+                }
+                Thread.currentThread().sleep(new Random().nextInt(1000));
+                System.out.println("customer-&gt;" + Thread.currentThread().getName()
+                        + "-&gt;RUNNABLE");
+                System.out.println("customer-&gt;" + Thread.currentThread().getName()
+                        +" get value -&gt;" + ValueObj.value);
+                ValueObj.value="";
+                lock.notify();
+            }
+        } catch (InterruptedException e){
+            e.printStackTrace();
+        }
+    }
+}
+</pre>
+
+<p>创建生产者，消费者线程：</p>
+
+<pre>public class ThreadProducer extends Thread {
+    private Producer pd;
+    public ThreadProducer(Producer pd){
+        this.pd = pd;
+    }
+    public void run(){
+        while(true) {
+            pd.setValue();
+        }
+    }
+}
+public class ThreadCustomer extends Thread {
+    private Customer ct;
+    public ThreadCustomer(Customer ct){
+        this.ct = ct;
+    }
+    public void run(){
+        while(true){
+            ct.getValue();
+        }
+    }
+}
+</pre>
+
+<p>运行一下：</p>
+
+<pre>public class ProdCustTest {
+    public static void main(String[] args){
+        String lock = new String("lock");
+        Producer pd = new Producer(lock);
+        Customer ct = new Customer(lock);
+        ThreadProducer tp1 = new ThreadProducer(pd);
+        ThreadCustomer tc1 = new ThreadCustomer(ct);
+        tp1.setName("tp1");
+        tc1.setName("tc1");
+        ThreadProducer tp2 = new ThreadProducer(pd);
+        ThreadCustomer tc2 = new ThreadCustomer(ct);
+        tp2.setName("tp2");
+        tc2.setName("tc2");
+        tp1.start();
+        tp2.start();
+        tc1.start();
+        tc2.start();
+    }
+}
+</pre>
+
+<p>由于出现了多个生产者和消费者，程序运行后很有可能会出现假死状态，即所有的线程都呈WAITING状态， <br>
+在代码中，虽然通过了wait/notify进行了通信，但是不能保证notify唤醒的是异类，有可能会使同类，比如生产者唤醒生产者，消费者唤醒消费者，如果这种情况到大一定的几率，到最后所有的线程都不能继续运行下去，大家都在等待，呈现WAITING状态，程序最后就呈假死状态，不能正常运行。 <br>
+下面是出现死锁时的输出:</p>
+
+<pre>producer-&gt;tp1-&gt;RUNNABLE
+producer-&gt;tp1 set value -&gt;1503115311105_140388307050099
+producer-&gt;tp1-&gt;WAITING
+producer-&gt;tp2-&gt;WAITING
+customer-&gt;tc2-&gt;RUNNABLE
+customer-&gt;tc2 get value -&gt;1503115311105_140388307050099
+customer-&gt;tc2-&gt;WAITING
+customer-&gt;tc1-&gt;WAITING
+producer-&gt;tp1-&gt;RUNNABLE
+producer-&gt;tp1 set value -&gt;1503115311205_140388407311284
+producer-&gt;tp1-&gt;WAITING
+producer-&gt;tp2-&gt;WAITING
+</pre>
+
+<p>出现死锁的流程： <br>
+生产者tp1进行生产，生产完毕后发出通知并释放锁，准备进入下一次while循环； <br>
+由于此时消费者还未启动，所以tp1释放锁之后又获得锁，此时value未被消费，tp1进入WAITING状态； <br>
+生产者tp2启动，发现value未被消费，tp2进入WAITING; <br>
+消费者tc2被启动，持有锁，将value消费掉，并发出通知，并进入下一次循环； <br>
+消费者tc2进入下次循环，发现value的值为空，进入WAITING，释放锁； <br>
+消费者tc1启动，返现value为空，进入WAITING，释放锁； <br>
+tp1被tc2唤醒，进入RUNNABLE，进行生产，生产结束进入WAITING； <br>
+tp2被tp1唤醒，发现value未被消费，进入WAITING； <br>
+那么该如何解决多生产者与多消费者存在的死锁问题呢，答案是使用notifyAll，将所有的等待都唤醒，这样就避免了资源不被及时更新的问题。</p>
+
+<h5>多生产与多消费：操作栈</h5>
+
+<p>我们使用一个ArrayList来存放操作资源，生产者向里添加，消费者向外读取并删除。在生产者与消费者数目一致的情况下，我们保持操作栈内的资源数保持为1；</p>
+
+<pre>public class StackObj {
+    private List<string> list= new ArrayList&lt;&gt;();
+    synchronized public void push(){
+        try{
+            if(list.size() == 1){
+                this.wait();
+            }
+            list.add("add String :" + new Random().nextInt());
+            this.notifyAll();
+            System.out.println("push=" + list.size());
+        } catch (InterruptedException e){
+            e.printStackTrace();
+        }
+    }
+
+    synchronized public String pop(){
+        String returnValue = "";
+        try{
+            if(list.size() == 0){
+                this.wait();
+            }
+            returnValue = list.get(0);
+            list.remove(0);
+            this.notify();
+            System.out.println("pop=" + list.size());
+        } catch (InterruptedException e){
+            e.printStackTrace();
+        }
+        return returnValue;
+    }
+}
+public class ThreadProducer extends Thread {
+    private StackObj pd;
+    public ThreadProducer(StackObj pd){
+        this.pd = pd;
+    }
+    public void run(){
+        while(true) {
+            pd.push();
+        }
+    }
+}
+public class ThreadCustomer extends Thread {
+    private StackObj ct;
+    public ThreadCustomer(StackObj ct){
+        this.ct = ct;
+    }
+    public void run(){
+        while(true){
+            ct.pop();
+        }
+    }
+}
+</string></pre>
+
+<p>如果只启动一个生产者和一个消费者：</p>
+
+<pre>    public static void main(String[] args){
+        StackObj stack = new StackObj();
+        ThreadProducer pd = new ThreadProducer(stack);
+        ThreadCustomer ct = new ThreadCustomer(stack);
+        pd.start();
+        ct.start();
+    }
+</pre>
+
+<p>运行结果：</p>
+
+<pre>...
+push=1
+pop=0
+push=1
+pop=0
+push=1
+pop=0
+push=1
+pop=0
+...
+</pre>
+
+<p>栈的长度始终保持在1的长度，如果启动多个生产者和消费者呢? <br>
+同时启动一个生产者与两个消费者线程，运行结果：</p>
+
+<pre>push=1
+pop=0
+Exception in thread "Thread-1" java.lang.IndexOutOfBoundsException: Index: 0, Size: 0
+    at java.util.ArrayList.rangeCheck(ArrayList.java:653)
+    at java.util.ArrayList.get(ArrayList.java:429)
+    at org.ting.prodcust.StackObj.pop(StackObj.java:31)
+    at org.ting.prodcust.ThreadCustomer.run(ThreadCustomer.java:13)
+</pre>
+
+<p>这是由于生产者进行push操作，释放锁之后，两个消费者都被唤醒，唤醒之后进行remove()操作，当一个消费者执行完，另外一个消费者再执行的时候，该资源已经被删除了，所以出现报错，这也就是前面提到的线程处于等待过程，资源被修改了的问题。 <br>
+要解决该问题，就需要进行二次校验，最简单的方法时将wait的条件由if换成while: <br>
+消费者：</p>
+
+<pre>while(list.size() == 0){
+    this.wait();
+}
+</pre>
+
+<p>那么，如果是多个生产者和多个消费者，我们同样需要将生产者的wait进行二次校验。 <br>
+总结： <br>
+通过wait/notify可以实现生产者与消费者，在多生产者和多消费者的情况下，为了避免程序陷入死锁，应当使用notifyAll唤醒所有的等待线程，线程由WAITING进入RUNNABLE时，要对资源进行校验，</p><span class="diff"></span></div>
+</div>
+            </div>
+        </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="copyright text-muted">Copyright &copy; Ting Blog 2017</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/tether.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="../js/clean-blog.js"></script>
+
+</body>
+
+</html>

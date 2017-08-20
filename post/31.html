@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ting Blog</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../css/clean-blog.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+    <!-- Temporary navbar container fix -->
+    <style>
+    .navbar-toggler {
+        z-index: 1;
+    }
+    
+    @media (max-width: 576px) {
+        nav > .container {
+            width: 100%;
+        }
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed-top navbar-toggleable-md navbar-light" id="mainNav">
+        <div class="container">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu <i class="fa fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../post.html">文章</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('../img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <div class="post-heading">
+                        <h3>java多线程基础--通过管道进行线程间通信</h3>
+                        <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
+                        <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+<div id="md-preview">
+
+<p>在java中，提供了各种各样的输入/输出流stream，使我们能够方便的对数据进行操作，其中管道流(pipeStrean)是一种特殊的流，用于在不同线程之间直接传送数据。一个线程发送数据到输出管道，另一个线程从输出管道中读取数据，通过使用管道，实现不同线程之间通信，无需借助临时文件之类的共享资源。 <br>
+在JDK中提供了4个类可以用作线程之间的通信： <br>
+1）PipedInputStream和PipedOutputStream 进行流操作； <br>
+2）PipedReader和PipedWriter 进行字节操作 <br>
+使用流操作：</p>
+
+<pre>public class PipedStream {
+    private PipedInputStream inputStream;
+    private PipedOutputStream outputStream;
+
+    public PipedStream(){
+        this.inputStream = new PipedInputStream();
+        this.outputStream = new PipedOutputStream();
+        try {
+            outputStream.connect(inputStream);
+        } catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    public void output(){
+        try {
+            for (int i = 0; i &lt; 100; i++) {
+                System.out.println("output-&gt;" + i);
+                Thread.currentThread().sleep(1000);
+                outputStream.write(new Integer(i).toString().getBytes());
+            }
+        } catch (IOException e){
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void input(){
+        try{
+            byte[] bts = new byte[20];
+            Integer length = inputStream.read(bts);
+            while(length != -1) {
+                String input = new String(bts, 0, length);
+                System.out.println("input-&gt;" + input.toString());
+                length = inputStream.read(bts);
+            }
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+}
+</pre>
+
+<p>input和output两个线程：</p>
+
+<pre>public class OutputThread extends Thread {
+    private PipedStream stream;
+    public OutputThread(PipedStream e){
+        this.stream = e;
+    }
+    public void run(){
+        while(true){
+            stream.output();
+        }
+    }
+}
+public class InputThread extends Thread {
+    private PipedStream stream;
+    public InputThread(PipedStream e){
+        this.stream = e;
+    }
+    public void run(){
+        while(true) {
+            try{
+                stream.input();
+                this.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+}
+</pre>
+
+<p>运行一个：</p>
+
+<pre>public class StreamTest {
+    public static void main(String[] args){
+        PipedStream stream = new PipedStream();
+        InputThread it = new InputThread(stream);
+        OutputThread ot = new OutputThread(stream);
+        ot.start();
+        it.start();
+    }
+}
+</pre>
+
+<p>输出结果:</p>
+
+<pre>output-&gt;0
+output-&gt;1
+output-&gt;2
+input-&gt;0
+input-&gt;1
+output-&gt;3
+....
+</pre>
+
+<p>需要注意的是，output与input线程必须同时存在，否则会抛出write end dead或者read end dead异常； <br>
+使用字节操作：</p>
+
+<pre>public class PipedByte {
+    private PipedReader reader;
+    private PipedWriter writer;
+
+    public PipedByte(){
+        reader = new PipedReader();
+        writer = new PipedWriter();
+        try {
+            reader.connect(writer);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void write(){
+        while(true) {
+            try {
+                for (int i = 0; i &lt; 100; i++) {
+                    System.out.println("write-&gt;" + i);
+                    Thread.currentThread().sleep(1000);
+                    writer.write(new Integer(i).toString().toCharArray());
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void read(){
+        while(true) {
+            try {
+                char[] rd = new char[20];
+                int leng = reader.read(rd);
+                while (leng != -1) {
+                    String r = new String(rd, 0, leng);
+                    System.out.println("read-&gt;" + r);
+                    leng = reader.read(rd);
+                }
+                Thread.currentThread().sleep(1000);
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e){
+                e.printStackTrace();
+            }
+        }
+    }
+}
+</pre>
+
+<p>输出结果:</p>
+
+<pre>write-&gt;0
+write-&gt;1
+read-&gt;0
+write-&gt;2
+read-&gt;1
+write-&gt;3
+read-&gt;2
+write-&gt;4
+read-&gt;3
+...
+</pre>
+
+<p>总结： <br>
+可以使用管道流的方式实现线程之间的通信；</p><span class="diff"></span></div>
+</div>
+            </div>
+        </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="copyright text-muted">Copyright &copy; Ting Blog 2017</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/tether.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="../js/clean-blog.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ting Blog</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../css/clean-blog.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+    <!-- Temporary navbar container fix -->
+    <style>
+    .navbar-toggler {
+        z-index: 1;
+    }
+    
+    @media (max-width: 576px) {
+        nav > .container {
+            width: 100%;
+        }
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed-top navbar-toggleable-md navbar-light" id="mainNav">
+        <div class="container">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu <i class="fa fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../post.html">文章</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('../img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <div class="post-heading">
+                        <h3>java多线程基础--ThreadLocal</h3>
+                        <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
+                        <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+<div id="md-preview">
+
+<p>如果想在每一个线程中都有自己的共享变量，可以使用ThreadLocal。ThreadLocal提供了线程级别的变量，这些变量与正常的变量相比，它们有独立的初始化。ThreadLocal实例时类中的一个典型的private static 字段，与线程的状态相关联。 <br>
+对于一个线程来说，线程的id是在它第一次执行的视同通过ThreadID.get()来获取的，并且重复调用其ID保持不变，ThreadLocal的实例会与ThreadId进行绑定，这样使用该类的每个线程都有自己的ThreadLocal实例； <br>
+看一个ThreadLocal的例子：</p>
+
+<pre>public class ThreadLocalTest {
+    public static ThreadLocal l = new ThreadLocal();
+    public static void main(String[] args){
+        if(l.get() == null){
+            System.out.println("no value");
+            l.set("hello world");
+        }
+        System.out.println(l.get());
+        System.out.println(l.get());
+    }
+}
+</pre>
+
+<p>运行一个:</p>
+
+<pre>no value
+hello world
+hello world
+</pre>
+
+<h5>各线程之间的ThreadLocal变量时相互隔离的</h5>
+
+<p>使用具有ThreadLocal变量的对象时，各个线程之间的ThreadLocal变量时相互隔离的。</p>
+
+<pre>public class LocalTool {
+    public static ThreadLocal tl = new ThreadLocal();
+}
+</pre>
+
+<p>运行一个：</p>
+
+<pre>public class LocalToolTest {
+    public static void main(String[] args){
+        Runnable r = ()-&gt;{
+            try{
+                for(int i=0; i &lt;100; i++){
+                    LocalTool.tl.set(
+                            Thread.currentThread().getName()
+                            + ' '
+                            + (i+1)
+                    );
+                    System.out.println("Thread-&gt;"
+                            + Thread.currentThread().getName()
+                            + " get-&gt;"
+                            + LocalTool.tl.get()
+                    );
+                    Thread.sleep(100);
+                }
+            } catch (InterruptedException e){
+                e.printStackTrace();
+            }
+
+        };
+
+        Thread at = new Thread(r);
+        at.setName("A");
+        Thread bt = new Thread(r);
+        bt.setName("B");
+        at.start();
+        bt.start();
+    }
+}
+</pre>
+
+<p>运行结果:</p>
+
+<pre>...
+Thread-&gt;A get-&gt;A 43
+Thread-&gt;B get-&gt;B 43
+Thread-&gt;A get-&gt;A 44
+Thread-&gt;B get-&gt;B 44
+Thread-&gt;A get-&gt;A 45
+Thread-&gt;B get-&gt;B 45
+Thread-&gt;A get-&gt;A 46
+Thread-&gt;B get-&gt;B 46
+Thread-&gt;A get-&gt;A 47
+Thread-&gt;B get-&gt;B 47
+Thread-&gt;A get-&gt;A 48
+Thread-&gt;B get-&gt;B 48
+...
+</pre>
+
+<p>两个线程之间相互独立，set，get方法互补影响；</p>
+
+<h5>ThreadLocal中，线程隔离的实现</h5>
+
+<p>看一下ThreadLocal的get与set方法的源码：</p>
+
+<pre>    public T get() {
+        Thread t = Thread.currentThread();
+        ThreadLocalMap map = getMap(t);
+        if (map != null) {
+            ThreadLocalMap.Entry e = map.getEntry(this);
+            if (e != null) {
+                @SuppressWarnings("unchecked")
+                T result = (T)e.value;
+                return result;
+            }
+        }
+        return setInitialValue();
+    }
+</pre>
+
+<p>get方法通过getMap()方法获取当前线程的ThreadLocalMap，然后从ThreadLocalMap中获取当前的ThreadLocal的值；</p>
+
+<pre>    void createMap(Thread t, T firstValue) {
+        t.threadLocals = new ThreadLocalMap(this, firstValue);
+    }
+    public void set(T value) {
+        Thread t = Thread.currentThread();
+        ThreadLocalMap map = getMap(t);
+        if (map != null)
+            map.set(this, value);
+        else
+            createMap(t, value);
+    }
+</pre>
+
+<p>set方法，将当前值添加到当前线程对应的ThreadLocalMap中； <br>
+ThreadLocalMap是ThreadLocal的一个内部类，该类是一个独立实现的Map类，其key值为当前的ThreadLocal对象，value值为设定的值。每个线程都会有一个ThreadLocalMap类型的变量:</p>
+
+<pre>//在Thread类中：
+ThreadLocal.ThreadLocalMap threadLocals = null;
+</pre>
+
+<p>所以在一个线程中，每次操作set和get，都是对当前线程实例的ThreadLocalMap的操作，这就保证了ThreadLocal变量在线程之间的独立； <br>
+InheritableThreadLocal可以在子线程中取得父线程继承下来的值。</p><span class="diff"></span></div>
+</div>
+            </div>
+        </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="copyright text-muted">Copyright &copy; Ting Blog 2017</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/tether.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="../js/clean-blog.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ting Blog</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../css/clean-blog.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+    <!-- Temporary navbar container fix -->
+    <style>
+    .navbar-toggler {
+        z-index: 1;
+    }
+    
+    @media (max-width: 576px) {
+        nav > .container {
+            width: 100%;
+        }
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed-top navbar-toggleable-md navbar-light" id="mainNav">
+        <div class="container">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu <i class="fa fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../post.html">文章</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('../img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <div class="post-heading">
+                        <h3>java多线程基础--线程安全的单例模式</h3>
+                        <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
+                        <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+<div id="md-preview">
+
+<p>单例模式在应用中比较常见，在结合单线程时，单例模式会出现一些意想不到的情况，在生产环境中出现异常，会造成很严重的后果。 <br>
+常见单利模式的方式，主要有以下一些：</p>
+
+<h5>立即加载/饿汉模式</h5>
+
+<p>立即加载就是在使用类的时候已经将对象创建完毕，常见的实现方法就是直接new实例化。</p>
+
+<pre>public class SingleTon {
+    private static SingleTon single = new SingleTon();
+    private SingleTon(){
+
+    }
+    public static SingleTon getInstance(){
+        return single;
+    }
+}
+</pre>
+
+<p>该模式下，是线程安全的，但是缺点在于不能在初始化时，有其它的实例变量，因为getInstance()方法不是线程安全的。</p>
+
+<h5>延迟加载/懒汉模式</h5>
+
+<p>延迟加载是指在调用get()方法时才被创建，常见的实现方法就是在get方法中进行new实例化。</p>
+
+<pre>public class SingleTon {
+    private static SingleTon single;
+    private SingleTon(){
+
+    }
+    public static SingleTon getInstance(){
+        if(single == null){
+            single = new SingleTon();
+        }
+        return single;
+    }
+}
+</pre>
+
+<p>在非并发条件下，懒汉模式能够满足需求，但是在并发条件下，由于getInstance方法没有进行同步处理，会出现多个SingleTon的实例；</p>
+
+<pre>public class SinleTonTest {
+    public static void main(String[] args){
+        Runnable r = ()-&gt;{
+            SingleTon s = SingleTon.getInstance();
+            System.out.println("single hash-&gt;" + s.hashCode());
+        };
+        Thread[] tds = new Thread[10];
+        for(int i =0; i &lt;10; i++){
+            tds[i] = new Thread(r);
+        }
+        for(int i =0; i&lt; 10; i++){
+            tds[i].start();
+        }
+    }
+}
+</pre>
+
+<p>输出：</p>
+
+<pre>single hash-&gt;985396398
+single hash-&gt;985396398
+single hash-&gt;985396398
+single hash-&gt;985396398
+single hash-&gt;985396398
+single hash-&gt;422414764
+single hash-&gt;985396398
+single hash-&gt;985396398
+single hash-&gt;985396398
+single hash-&gt;985396398
+</pre>
+
+<p>可见，使用普通的饱汉模式，在多线程的情况下，可能会出现多个实例的情况；改进的方法，是使用同步处理： <br>
+1)synchronized关键字 <br>
+对饱汉模式下的实现做一下同步处理，直接在get方法上添加同步关键字：</p>
+
+<pre>public class SingleTon {
+    private static SingleTon single;
+    private SingleTon(){
+
+    }
+    public synchronized static SingleTon getInstance(){
+        if(single == null){
+            T
+            single = new SingleTon();
+        }
+        return single;
+    }
+}
+</pre>
+
+<p>该方法，虽然避免了出现多个单例对象的实例，但是这种方法效率比较低，必须等到上个上个线程解锁后，下个线程才能获取实例； <br>
+2）synchronized同步代码块</p>
+
+<pre>public class SingleTon {
+    private static SingleTon single;
+    private SingleTon(){
+
+    }
+    public static SingleTon getInstance() {
+        if (single == null) {
+            synchronized (SingleTon.class) {
+                single = new SingleTon();
+            }
+        }
+        return single;
+    }
+}
+</pre>
+
+<p>使用synchronized关键字同步了关键new语句，但是在判断single是否为空，到给single赋值过程中，其它的线程可能已经给single赋了值了，因此，在执行new操作之前，需要重新校验一下single是否为null，这就是DCL双重校验;</p>
+
+<pre>public class SingleTon {
+    private static SingleTon single;
+    private SingleTon(){
+
+    }
+    public static SingleTon getInstance() {
+        if (single != null) {
+            return single;
+        } else {
+            synchronized (SingleTon.class) {
+                if(single == null) {
+                    single = new SingleTon();
+                }
+            }
+        }
+        return single;
+    }
+}
+</pre>
+
+<h5>使用静态内置类实现单例模式</h5>
+
+<pre>public class StaticSingleTon {
+    private static class SingleTonHandler{
+        private static StaticSingleTon single = new StaticSingleTon();
+    }
+    private StaticSingleTon(){
+
+    }
+    public static StaticSingleTon getInstance(){
+        return SingleTonHandler.single;
+    }
+}
+</pre>
+
+<p>实际上是饿汉模式的变式；</p>
+
+<h5>static代码块实现单例模式</h5>
+
+<pre>public class StaticSingleTon {
+    private static StaticSingleTon single = null;
+    private StaticSingleTon(){
+
+    }
+    static {
+        single = new StaticSingleTon();
+    }
+    public static StaticSingleTon getInstance(){
+        return single;
+    }
+}
+</pre>
+
+<h5>使用枚举实现单例模式</h5>
+
+<p>枚举是在java内部实现单例模式的，是天生的单例模式。</p>
+
+<pre>public enum EnumSingleTon  {
+    single;
+    private EnumSingleTon(){
+
+    }
+}
+</pre>
+
+<p>测试一下:</p>
+
+<pre>public class SinleTonTest {
+    public static void main(String[] args){
+        Runnable r = ()-&gt;{
+            EnumSingleTon s = EnumSingleTon.single;
+            System.out.println("single hash-&gt;" + s.hashCode());
+        };
+        Thread[] tds = new Thread[10];
+        for(int i =0; i &lt;10; i++){
+            tds[i] = new Thread(r);
+        }
+        for(int i =0; i&lt; 10; i++){
+            tds[i].start();
+        }
+    }
+}
+</pre>
+
+<p>输出：</p>
+
+<pre>single hash-&gt;422414764
+single hash-&gt;422414764
+single hash-&gt;422414764
+single hash-&gt;422414764
+single hash-&gt;422414764
+single hash-&gt;422414764
+single hash-&gt;422414764
+single hash-&gt;422414764
+single hash-&gt;422414764
+single hash-&gt;422414764
+</pre>
+
+<p>所有线程只返回了一个实例；</p>
+
+<h5>总结：</h5>
+
+<p>创建一个单例模式主要有三种方法： <br>
+1）饿汉模式下，声明时初始化； <br>
+2）static代码块； <br>
+3）饱汉模式下，双重校验； <br>
+4）合理使用枚举；</p><span class="diff"></span></div>
+</div>
+            </div>
+        </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="copyright text-muted">Copyright &copy; Ting Blog 2017</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/tether.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="../js/clean-blog.js"></script>
+
+</body>
+
+</html>

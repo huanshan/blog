@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ting Blog</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../css/clean-blog.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+    <!-- Temporary navbar container fix -->
+    <style>
+    .navbar-toggler {
+        z-index: 1;
+    }
+    
+    @media (max-width: 576px) {
+        nav > .container {
+            width: 100%;
+        }
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed-top navbar-toggleable-md navbar-light" id="mainNav">
+        <div class="container">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu <i class="fa fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../post.html">文章</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('../img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <div class="post-heading">
+                        <h3>java多线程基础--ReentrantLock</h3>
+                        <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
+                        <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+<div id="md-preview">
+
+<p>在java多线程中，可以使用synchronized关键字来实现线程之间的同步互斥，在JDK1.5中，新增加的ReentrantLock类也可以达到同样的效果，并且在扩展功能上也更加强大，具有嗅探锁定，多路分支通知等功能，使用也更加的灵活。</p>
+
+<h5>ReentrantLock（可重入锁）</h5>
+
+<p>看一个ReentrantLock的实例：</p>
+
+<pre>public class LockService {
+    private Lock lock = new ReentrantLock();
+    public void testMethod(){
+        lock.lock();
+        System.out.println("thread-&gt;"
+        + Thread.currentThread().getName()
+        + "-&gt; start -&gt; "
+        + System.currentTimeMillis());
+        for(int i =0; i &lt;100; i++){
+            System.out.println("thread-&gt;"
+                + Thread.currentThread().getName()
+                + "-&gt; " + ( i + 1));
+        }
+        System.out.println("thread-&gt;"
+                + Thread.currentThread().getName()
+                + "-&gt; end -&gt; "
+                + System.currentTimeMillis());
+        lock.unlock();
+    }
+}
+public class LockThread extends Thread {
+    private LockService service;
+    public LockThread(LockService service){
+        this.service = service;
+    }
+
+    public void run(){
+        service.testMethod();
+    }
+}
+</pre>
+
+<p>运行一下：</p>
+
+<pre>public class LockThreadTest {
+    public static void main(String[] args){
+        LockService lock = new LockService();
+        Thread td1 = new LockThread(lock);
+        td1.setName("A");
+        Thread td2 = new LockThread(lock);
+        td2.setName("B");
+        td1.start();
+        td2.start();
+    }
+}
+</pre>
+
+<p>运行结果:</p>
+
+<pre>...
+thread-&gt;A-&gt; 99
+thread-&gt;A-&gt; 100
+thread-&gt;A-&gt; end -&gt; 1503205108816
+thread-&gt;B-&gt; start -&gt; 1503205108816
+thread-&gt;B-&gt; 1
+thread-&gt;B-&gt; 2
+...
+</pre>
+
+<p>运行结果表明，使用了lock，起到了同步效果；调用lock.lock()方法可以获取锁，调用lock.unlock()方法，释放锁；</p>
+
+<h5>使用Condition实现等待/通知</h5>
+
+<p>关键字synchronized与wait()和notify()/notifyAll()方法相结合可以实现等待/通知模式，类ReentrantLock也可以实现同样的功能，但要借助于Condition对象。Condition类也是在JDK1.5中实现的，使用它可以有更好的灵活性，比如可以实现多路通知，即在一个Lock对象里可以创建多个Condition的实例，线程对象可以注册在指定的Condition中国，从而可以有选择性的进行线程通知，在调度上更加灵活。 <br>
+在使用notify()/notifyAll()方法进行通知时，被通知的线程是由JVM随机选择的，但使用ReentrantLock结合Condition类是可以实现“选择性通知”。 <br>
+synchronized就相当于整个Lock对象中只有一个单一的Condition对象，所有的线程都注册在它一个对象的身上，线程开始notifyAll()时，需要通知所有的WAITING线程，没有选择权，效率会出现问题。 <br>
+使用condition.await()方法可以将当前线程设置为WAITING状态，同wait方法执行之前必须获得对象锁一样，在Conditon的awaite()方法执行前，必须使用lock.lock()方法获得对象锁。</p>
+
+<pre>public class LockConditionService {
+    private Lock lock = new ReentrantLock();
+    private Condition condition = lock.newCondition();
+    public void await(){
+        try{
+            lock.lock();
+            System.out.println("A");
+            condition.await();
+            System.out.println("B");
+        } catch (InterruptedException e){
+            e.printStackTrace();
+        }
+    }
+}
+public class LockConditionThread extends Thread {
+    private LockConditionService service;
+    public LockConditionThread(LockConditionService service){
+        this.service = service;
+    }
+
+    public void run(){
+        service.await();
+    }
+}
+</pre>
+
+<p>运行一下：</p>
+
+<pre>public class LockThreadTest {
+    public static void main(String[] args){
+        LockConditionService lock = new LockConditionService();
+        Thread td1 = new LockConditionThread(lock);
+        td1.start();
+    }
+}
+</pre>
+
+<p>输出结果：</p>
+
+<pre>A
+</pre>
+
+<p>调用condition.await()方法后，当前线程处于WAITING状态，因此，只打印了"A";</p>
+
+<h5>使用Condition实现等待/通知</h5>
+
+<p>使用condition.await()方法，将当前线程处于WAITING状态，使用condition.signal()方法，可以通知处于WAITING状态的线程进入RUNNABLE状态。</p>
+
+<pre>public class LockConditionService {
+    private Lock lock = new ReentrantLock();
+    private Condition condition = lock.newCondition();
+    public void await(){
+        try{
+            lock.lock();
+            System.out.println("thread-&gt;"
+            + Thread.currentThread().getName()
+            + " -&gt; start-&gt;"
+            + System.currentTimeMillis());
+            condition.await();
+            System.out.println("thread-&gt;"
+            + Thread.currentThread().getName()
+            + " -&gt;  end-&gt;"
+            + System.currentTimeMillis());
+
+        } catch (InterruptedException e){
+            e.printStackTrace();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public void signal(){
+        try{
+            lock.lock();
+            System.out.println("thread-&gt;"
+            + Thread.currentThread().getName()
+            + "-&gt;signal-&gt;"
+            + System.currentTimeMillis());
+            condition.signal();
+        } finally {
+            lock.unlock();
+        }
+    }
+}
+public class LockConditionThread extends Thread {
+    private LockConditionService service;
+    public LockConditionThread(LockConditionService service){
+        this.service = service;
+    }
+
+    public void run(){
+        service.await();
+    }
+}
+</pre>
+
+<p>运行一下：</p>
+
+<pre>public class LockThreadTest {
+    public static void main(String[] args)
+            throws InterruptedException {
+        LockConditionService lock = new LockConditionService();
+        Thread td1 = new LockConditionThread(lock);
+        td1.start();
+        Thread.sleep(1000);
+        lock.signal();
+    }
+}
+</pre>
+
+<p>输出结果:</p>
+
+<pre>thread-&gt;Thread-0 -&gt; start-&gt;1503207417067
+thread-&gt;main-&gt;signal-&gt;1503207418067
+thread-&gt;Thread-0 -&gt;  end-&gt;1503207418068
+</pre>
+
+<p>成功的实现了等待/通知模式.</p>
+
+<h5>多个condition实现通知部分</h5>
+
+<p>前面使用一个Condition对象来实现了一个一对一的等待/通知模型，一个Lock对象可以同时关联多个condition，每个condition可以单独负责一类线程的等待和唤醒；</p>
+
+<pre>public class LockConditionService {
+    private Lock lock = new ReentrantLock();
+    private Condition condition = lock.newCondition();
+    private Condition conditionB = lock.newCondition();
+    public void await(){
+        try{
+            lock.lock();
+            System.out.println("thread-&gt;"
+            + Thread.currentThread().getName()
+            + " -&gt; waitA -&gt; start-&gt;"
+            + System.currentTimeMillis());
+            condition.await();
+            System.out.println("thread-&gt;"
+            + Thread.currentThread().getName()
+            + " -&gt; waitA -&gt;  end-&gt;"
+            + System.currentTimeMillis());
+
+        } catch (InterruptedException e){
+            e.printStackTrace();
+        } finally {
+            lock.unlock();
+        }
+    }
+    public void awaitB(){
+        try{
+            lock.lock();
+            System.out.println("thread-&gt;"
+                    + Thread.currentThread().getName()
+                    + " -&gt; waitB -&gt; start-&gt;"
+                    + System.currentTimeMillis());
+            conditionB.await();
+            System.out.println("thread-&gt;"
+                    + Thread.currentThread().getName()
+                    + " -&gt; waitB -&gt;  end-&gt;"
+                    + System.currentTimeMillis());
+
+        } catch (InterruptedException e){
+            e.printStackTrace();
+        } finally {
+            lock.unlock();
+        }
+    }
+    public void signal(){
+        try{
+            lock.lock();
+            System.out.println("thread-&gt;"
+            + Thread.currentThread().getName()
+            + "-&gt;signalA-&gt;"
+            + System.currentTimeMillis());
+            condition.signal();
+        } finally {
+            lock.unlock();
+        }
+    }
+    public void signalB(){
+        try{
+            lock.lock();
+            System.out.println("thread-&gt;"
+                    + Thread.currentThread().getName()
+                    + "-&gt;signalB-&gt;"
+                    + System.currentTimeMillis());
+            conditionB.signal();
+        } finally {
+            lock.unlock();
+        }
+    }
+}
+public class LockConditionThread extends Thread {
+    private LockConditionService service;
+    public LockConditionThread(LockConditionService service){
+        this.service = service;
+    }
+
+    public void run(){
+        if(this.getName().equals("A")) {
+            service.await();
+        } else {
+            service.awaitB();
+        }
+    }
+}
+</pre>
+
+<p>运行：</p>
+
+<pre>public class LockThreadTest {
+    public static void main(String[] args)
+            throws InterruptedException {
+        LockConditionService lock = new LockConditionService();
+        Thread td1 = new LockConditionThread(lock);
+        td1.setName("A");
+        td1.start();
+        Thread td2 = new LockConditionThread(lock);
+        td2.setName("B");
+        td2.start();
+        Thread.sleep(1000);
+        lock.signal();
+    }
+}
+</pre>
+
+<p>运行结果:</p>
+
+<pre>thread-&gt;A -&gt; waitA -&gt; start-&gt;1503207908866
+thread-&gt;B -&gt; waitB -&gt; start-&gt;1503207908867
+thread-&gt;main-&gt;signalA-&gt;1503207909875
+thread-&gt;A -&gt; waitA -&gt;  end-&gt;1503207909875
+</pre>
+
+<p>运行结果展示，只有线程A的condition调用了signal方法，因此只有线程A被唤醒，线程B不受影响；</p>
+
+<h5>公平锁与非公平锁</h5>
+
+<p>锁Lock分为公平锁和非公平锁，公平锁表示线程索取锁的书序是按照线程加锁的顺序来分配的，即先来先得的FIFO顺序，而非公平锁就是一种获取锁的抢先机制，是随机获取锁的，和公平锁不一样的是先来的不一定先得到锁，这种方式可能会造成某些线程一直拿不到锁，结果也就不公平了。 <br>
+ReentrantLock默认的是非公平锁，若使用公平锁，传递给构造函数true</p>
+
+<pre>ReentrantLock fairLock = new ReentrantLock(true);
+</pre>
+
+<h5>总结</h5>
+
+<p>同synchronized关键字一样，ReentrantLock具有同步的作用，其结合Condition对象，可以实现等待/通知模式的部分唤醒操作。</p></div>
+</div>
+            </div>
+        </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="copyright text-muted">Copyright &copy; Ting Blog 2017</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/tether.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="../js/clean-blog.js"></script>
+
+</body>
+
+</html>

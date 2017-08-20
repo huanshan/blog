@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ting Blog</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../css/clean-blog.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+    <!-- Temporary navbar container fix -->
+    <style>
+    .navbar-toggler {
+        z-index: 1;
+    }
+    
+    @media (max-width: 576px) {
+        nav > .container {
+            width: 100%;
+        }
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed-top navbar-toggleable-md navbar-light" id="mainNav">
+        <div class="container">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu <i class="fa fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../post.html">文章</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('../img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <div class="post-heading">
+                        <h3>java多线程基础--读写锁ReentrantReadWriteLock</h3>
+                        <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
+                        <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+<div id="md-preview">
+
+<p>类RenntrantLock具有完全互斥排他的效果，即在同一个时间只有一个线程在执行ReentrantLock.lock()方法后面的任务，这样虽然保证了实例变量的线程安全，但是效率却比较低下。java中提高了一种读写锁ReentrantReadWriteLock来提升代码的运行速度。 <br>
+读写锁表示有两个锁，一个是读操作相关的锁，称为共享锁，另一个是写操作相关的锁，叫排它锁。多个读锁之间不互斥，读锁与写锁互斥，写锁与写锁互斥。在没有线程进行写入操作时，进行读取操作的多个Thread都可以获取读锁，而进行写入操作的Thread只有在获取写锁之后才能进行写操作。 <br>
+多个线程可以同时进行读取操作，但是同一时刻只允许一个Thread进行写操作。 <br>
+看一个例子：</p>
+
+<pre>public class ReadWriteLockService {
+    private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    public void read(){
+        try {
+            lock.readLock().lock();
+            System.out.println("read-&gt;thread-&gt;"
+                    + Thread.currentThread().getName()
+                    + "start-&gt;" + System.currentTimeMillis());
+            Thread.sleep(5000);
+            System.out.println("read-&gt;thread-&gt;"
+                    + Thread.currentThread().getName()
+                    + "end-&gt;" + System.currentTimeMillis());
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void write(){
+        try{
+            lock.writeLock().lock();
+            System.out.println("write-&gt;thread-&gt;"
+                    + Thread.currentThread().getName()
+                    + "start-&gt;" + System.currentTimeMillis());
+            Thread.sleep(5000);
+            System.out.println("write-&gt;thread-&gt;"
+                    + Thread.currentThread().getName()
+                    + "end-&gt;" + System.currentTimeMillis());
+        } catch (InterruptedException e) {
+             e.printStackTrace();
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+}
+public class ReadWriteThread extends Thread {
+    ReadWriteLockService service = new ReadWriteLockService();
+    private String action = "read";
+    public ReadWriteThread(ReadWriteLockService service,
+                           String action){
+        this.service = service;
+        this.action = action;
+    }
+    public void run(){
+        if(action.equals("read")){
+            service.read();
+        } else {
+            service.write();
+        }
+    }
+}
+</pre>
+
+<p>首先，启动两个read线程:</p>
+
+<pre>public class LockThreadTest {
+    public static void main(String[] args)
+            throws InterruptedException {
+        ReadWriteLockService service = new ReadWriteLockService();
+        ReadWriteThread th1 = new ReadWriteThread(service, "read");
+        th1.setName("A");
+        ReadWriteThread th2 = new ReadWriteThread(service, "read");
+        th2.setName("B");
+        th1.start();
+        th2.start();
+    }
+}
+</pre>
+
+<p>输出结果：</p>
+
+<pre>read-&gt;thread-&gt;Astart-&gt;1503217817924
+read-&gt;thread-&gt;Bstart-&gt;1503217817925
+read-&gt;thread-&gt;Aend-&gt;1503217822925
+read-&gt;thread-&gt;Bend-&gt;1503217822925
+</pre>
+
+<p>两个读线程之间并没有发生同步互斥； <br>
+然后，启动一个读，一个写:</p>
+
+<pre>public class LockThreadTest {
+    public static void main(String[] args)
+            throws InterruptedException {
+        ReadWriteLockService service = new ReadWriteLockService();
+        ReadWriteThread th1 = new ReadWriteThread(service, "read");
+        th1.setName("A");
+        ReadWriteThread th2 = new ReadWriteThread(service, "write");
+        th2.setName("B");
+        th1.start();
+        th2.start();
+    }
+}
+</pre>
+
+<p>运行结果:</p>
+
+<pre>read-&gt;thread-&gt;Astart-&gt;1503217938875
+read-&gt;thread-&gt;Aend-&gt;1503217943876
+write-&gt;thread-&gt;Bstart-&gt;1503217943876
+write-&gt;thread-&gt;Bend-&gt;1503217948876
+</pre>
+
+<p>读写线程之间发生了同步互斥； <br>
+最后试一下两个写线程:</p>
+
+<pre>public class LockThreadTest {
+    public static void main(String[] args)
+            throws InterruptedException {
+        ReadWriteLockService service = new ReadWriteLockService();
+        ReadWriteThread th1 = new ReadWriteThread(service, "write");
+        th1.setName("A");
+        ReadWriteThread th2 = new ReadWriteThread(service, "write");
+        th2.setName("B");
+        th1.start();
+        th2.start();
+    }
+}
+</pre>
+
+<p>运行结果：</p>
+
+<pre>write-&gt;thread-&gt;Astart-&gt;1503218070430
+write-&gt;thread-&gt;Aend-&gt;1503218075431
+write-&gt;thread-&gt;Bstart-&gt;1503218075431
+write-&gt;thread-&gt;Bend-&gt;1503218080431
+</pre>
+
+<p>两个写线程之间也发生了互斥；</p>
+
+<h5>总结</h5>
+
+<p>读写锁ReentrantReadWriteLock来提升代码的运行速度，读锁之间不存在互斥，读锁和写锁，写锁和写锁之间存在互斥。</p><span class="diff"></span></div>
+</div>
+            </div>
+        </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="copyright text-muted">Copyright &copy; Ting Blog 2017</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/tether.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="../js/clean-blog.js"></script>
+
+</body>
+
+</html>
