@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ting Blog</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../css/clean-blog.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+    <!-- Temporary navbar container fix -->
+    <style>
+    .navbar-toggler {
+        z-index: 1;
+    }
+    
+    @media (max-width: 576px) {
+        nav > .container {
+            width: 100%;
+        }
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed-top navbar-toggleable-md navbar-light" id="mainNav">
+        <div class="container">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu <i class="fa fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../post.html">文章</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('../img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <div class="post-heading">
+                        <h3>Java虚拟机--再析类的初始化</h3>
+                        <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
+                        <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+<div id="md-preview">
+
+<p>虚拟机把描述类的数据从class文件加载到内存，并对数据进行校验，转换解析和初始化，最终形成可以被虚拟机直接使用的java类型，这就是虚拟机的类加载机制，在java中，类型的加载，连接和初始化过程都是在程序运行期间完成的。</p>
+
+<h5>类加载的流程</h5>
+
+<p>类从被加载到虚拟机内存中，到卸载出内存为止，它的生命周期包括：加载loading，验证verification，准备preparation，解析resolution，初始化initilization，使用using和卸载unloading。其中验证，准备和解析称为连接。 <br>
+对于类的加载，虚拟机规范并没有进行强制约束，但是有且只有五种情况必须立即对类进行初始化。 <br>
+1）遇到new, getstatic, putstatic, invokestatic 这4个字节码指令，会触发其初始化，常见的场景是使用new关键字实例化对象，读取或设置一个类的静态字段（被final修饰的已经在常量池中的字段除外），调用一个静态方法的时候； <br>
+2）使用java.lang.reflect包的方法对类进行反射调用的时候，会触发其初始化； <br>
+3）初始化一个类时，会先触发其父类的初始化； <br>
+4）jvm启动时，包含main()方法的那个执行主类会被触发初始化； <br>
+5）使用java7的动态语言支持； <br>
+除此之外，所有引用类的方式都不会触发初始化，称为被动引用； <br>
+常见的被动引用有下面一些：</p>
+
+<pre>public class Super {
+    static{
+        System.out.println("super class loaded");
+    }
+    public static int value = 10;
+}
+
+public class Child extends Super {
+    static {
+        System.out.println("child class load");
+    }
+
+}
+</pre>
+
+<p>执行：</p>
+
+<pre>public class JvmTestMain {
+    public static void main(String[] args){
+
+        System.out.println("child class value is :" + Child.value);
+    }
+}
+</pre>
+
+<p>实际输出值：</p>
+
+<pre>super class loaded
+child class value is :10
+</pre>
+
+<p>虽然调用了子类child，但是child类并没有进行初始化，由于value是其父类的属性，因此其父类super进行了初始化。 <br>
+再看一个例子：</p>
+
+<pre>public class JvmTestMain {
+    public static void main(String[] args){
+        Super[] supers = new Super[10];
+        System.out.println("super array length is " + supers.length);
+    }
+}
+</pre>
+
+<p>输出</p>
+
+<pre>super array length is 10
+</pre>
+
+<p>构造父类的数组，并没有触发父类初始化；可以通过-XX:+TraceClassLoading参数观察类的加载情况。 <br>
+常量（final修饰的）在编译阶段会存入调用类的常量池中，本质上并没有直接引用到定义常量的类，因此不会触发定义常量的类的初始化。</p>
+
+<pre>public class ConstClass {
+    static {
+        System.out.println("const class load");
+    }
+    public static final String HELLOWORLD = "hello world";
+}
+</pre>
+
+<p>测试:</p>
+
+<pre>public class ConstClassTestMain {
+    public static void main(String[] args){
+        System.out.println(ConstClass.HELLOWORLD);
+    }
+}
+</pre>
+
+<p>输出：</p>
+
+<pre>hello world
+</pre>
+
+<p>并没有触发类ConstClassTestMain初始化；</p>
+
+<h5>接口的初始化</h5>
+
+<p>接口也有初始化过程，这点与类是一致的，接口的加载与类的加载过程有一些不同，表现在一个接口在初始化时，并不要求其父类接口完成了初始化，只有在真正使用到父类接口的时候，接口才会初始化。</p>
+
+<span class="diff"><h5>总结：</h5>
+
+<p>在初始化阶段，虚拟机规范了5种情况必须立即对类进行初始化，除此之外，所有引用类的方式都不会触发初始化，是被动引用；</p></span></div>
+</div>
+            </div>
+        </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="copyright text-muted">Copyright &copy; Ting Blog 2017</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/tether.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="../js/clean-blog.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ting Blog</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../css/clean-blog.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+    <!-- Temporary navbar container fix -->
+    <style>
+    .navbar-toggler {
+        z-index: 1;
+    }
+    
+    @media (max-width: 576px) {
+        nav > .container {
+            width: 100%;
+        }
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed-top navbar-toggleable-md navbar-light" id="mainNav">
+        <div class="container">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu <i class="fa fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../post.html">文章</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('../img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <div class="post-heading">
+                        <h3>mysql--Innodb中的事务等级和锁的关系（1）</h3>
+                        <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
+                        <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+<div id="md-preview">
+
+<h5>什么是事务</h5>
+
+<p>事务是应用程序的一系列严密的操作，所有的操作必须成功完成，否则在每个操作中所作的所有更改都会被撤销。也就是事务具有原子性，一个事务中的一系列的操作要么全部成功，要么一个都不做。事务的结束有两种，当事务中的所有步骤全部成功执行时，事务提交，如果其中一个步骤失败，将发生回滚操作，撤销之前到事务开始时的所有操作 。</p>
+
+<h5>事务的ACID</h5>
+
+<p>事务具有四个特性：原子性（Atomicity）、一致性（Consistency），隔离性（Isolation）和持续性（Durability），统称为ACID； <br>
+1）原子性 <br>
+事务是数据库的逻辑工作单位，事务中包含的各种操作要么都做，要么都不做； <br>
+2）一致性 <br>
+事务执行的结果必须是使数据库从一个一致性状态变为另一个一致性状态，因此当数据库只包含成功事务提交的结果时，就说数据库处于一致性状态。如果数据库系统运行中发生故障，有些事务尚未完成就被迫中断，这些数据库就处于一种不正确的状态，或者说是不一致的状态； <br>
+3）隔离性 <br>
+一个事务的执行不能受到其它事务的干扰，即一个事务内部的操作及使用的数据对其它并发事务是隔离的，并发执行的各个事物之间不能互相干扰。 <br>
+4）持续性 <br>
+也称为持久性，指一个事务一旦提交，它对数据库中的数据的改变就应该是永久性的，接下来的其它操作或故障不应该对其执行结果有影响；</p>
+
+<h5>加锁机制</h5>
+
+<p>数据库为了维护事务的ACID特性，尤其是一致性和隔离性，一般使用加锁这种方式，但是数据库是个高并发的应用，同一时间会有大量的并发访问，如果加锁过度，会极大地降低并发处理能力，所以对于加锁的处理，可以说就是数据库对于事务处理的精髓所在。</p>
+
+<h5>一次封锁还是两段锁</h5>
+
+<p>因为有大量的并发访问，为了防止死锁，一般应用中推荐使用一次封锁法，就是在方法的开始阶段，已经预先直到会用到哪些数据，然后全部锁住，在方法运行之后，再全部解锁。这种方式可以有效的避免循环死锁，但是在数据库中并不适用，因为在食物开始阶段，数据库并不知道会用到哪些数据，数据库遵循的是两段锁协议，将事务分成两个阶段，加锁阶段和解锁阶段，所以称为两段锁。 <br>
+1）加锁阶段 <br>
+在该阶段可以进行加锁操作，在对任何数据进行读操作之前要申请并获得S锁（共享锁，其它事务可以继续加共享锁，但不能加排它锁），在进行写操作之前要申请并获得X锁（排它锁，其它事务不能再获得任何锁）。加锁不成功，事务进入等待状态，直到加锁成功才继续执行。 <br>
+2）解锁阶段 <br>
+当事务释放了一个封锁之后，事务进入解锁阶段，在该阶段只能进行解锁操作，不能进行加锁操作；</p>
+
+<pre><hr>
+事务                        加锁/解锁处理
+<hr>
+begin;
+<hr>
+insert into test ....       加insert对应的锁
+<hr>
+update test set ....        加update对应的锁
+<hr>
+delete from test ....       加delete对应的锁
+<hr>
+commit;                     事务提交时，同时释放insert、update和delete对应的锁
+<hr>
+</pre>
+
+<p>这种方式虽然无法避免死锁，但是两段锁协议可以保证事务的并发调度是串行化。</p>
+
+<h5>潜在的数据完整性问题</h5>
+
+<p>1）脏读 <br>
+当可以读取未提交的数据时可能会出现脏读，因为如果这些数据的修改被回退，就会导致在数据处理中使用无效数据。 <br>
+实例： <br>
+· A的银行账户余额为1000 <br>
+· 银行人员将A的账户余额改为了8000（但是未提交事务）； <br>
+· A查询自己的账户，发现余额有8000； <br>
+· 银行人员发现操作有误，回滚了事务，A的账户余额变为了1000； <br>
+· A查询自己的账户，发现余额只有1000；</p>
+
+<p>2）不可重复读 <br>
+如果一个查询在同一个事务内，多次读取同一数据，在整个事务没有结束时，另外一个事务也访问并修改该同一数据，由于第二个事务的修改，那么第一个事务多次查询时，返回的可能是不同的结果集。在一两次读到的数据是不一样的，个事务内这就是不可重复读。 <br>
+实例： <br>
+· 在事务1中，A读取了自己的账户余额为1000元，操作并没有完成； <br>
+· 在事务2中，银行人员修改了A的余额为2000元，并提交了事务； <br>
+· 在事务1中，A再次读取自己的银行余额时，变为了2000元；</p>
+
+<p>3）幻读 <br>
+当书屋不是独立执行时，发生的一种现象。第一个事务对一个表中的数据进行了修改，这个修改涉及到表中的全部数据行，同时第二个事务也修改这个表的数据，这种修改是向表里插入一条新数据，那么以后就会发生操作第一个事务的用户发现表里还没有修改的数据； <br>
+实例 <br>
+· 在事务1中，A读取了自己的账号余额为1000元，并取出1000元，操作并没有完成； <br>
+· 在事务2中，银行人员为A的账户存入了1000元，并提交了事务； <br>
+· 在事务1中，A认为自己的账户余额应该为0元，结果提交操作之后，发现账户余额仍然为1000元；</p>
+
+<h5>事务的四种隔离等级</h5>
+
+<p>在数据中，为了有效保证并发读取数据的正确性，提出了四个事务隔离级别，数据库锁，也是为了构建这些隔离级别存在的</p>
+
+<pre><hr>
+隔离级别      脏读(Dirty Read)  不可重复读（NoReoeadted Read） 幻读（Phantom Read）
+<hr>
+未提交读            可能               可能                         可能
+read unCommited
+<hr>   
+已提交读            不可能             可能                         可能
+read commited
+<hr>
+可重复读            不可能             不可能                       可能
+Repeatable read
+<hr>
+可串行化            不可能             不可能                       不可能
+serializable
+<hr>
+</pre>
+
+<p>· 未提交读(Read Uncommitted)允许脏读，也就是可能会读到其它会话中未提交事务修改的数据； <br>
+· 提交读(Read Commited)，只能允许读到自己的已经提交的数据，Oracle等多数数据库默认是该级别； <br>
+· 可重复读(Repeated Read)，在同一个事务内的查询都是与事务开始时刻一致，In弄DB的默认级别，在SQL标准中，该隔离级别消除了不可重复读，但是还是会存在幻读； <br>
+· 串行读(Serializable)，完全串行化的读，每次读都需要获得表级共享锁，读写相互都是阻塞的；</p>
+
+<h5>MySql中锁的种类</h5>
+
+<p>MySql中锁的种类很多，有常见的表锁和行锁，也有新加入的Metadata Lock等，对于其它数据不加限制，所以并发能力强，Mysql一般都是用行锁来处理并发事务。 <br>
+1）Read Commited 已提交读 <br>
+在RC级别中，数据的读取都是不加锁的，但是数据的写入，修改和删除都是需要加锁的。 <br>
+例如:</p>
+
+<pre>create table class_teacher (
+    id int(11) not null auto_increment,
+    class_name varchar(100) collate uft8mb4_unicode_ci not null,
+    teacher_id int(11) not null,
+    primary key (id),
+    key idx_teacher_id (teacher_id),
+) engine=InnoDB auto_increment=5 default charset=uft8mb4;
+执行：
+selecte * from class_teacher;
++----+--------------+------------+
+| id | class_name   | teacher_id |
++----+--------------+------------+
+|  1 | 初三一班     |          1 |
+|  3 | 初二一班     |          2 |
+|  4 | 初二二班     |          2 |
++----+--------------+------------+
+</pre>
+
+<p>由于MySql的In弄DB默认使用的是RR级别，所以先要将该session开启呈RC级别，并且设置binlog模式</p>
+
+<pre>SET session transaction isolation level read committed;
+SET SESSION binlog_format = 'ROW';（或者是MIXED）
+</pre>
+
+<p>然后，我们来操作两个事务：</p>
+
+<pre><hr>
+事务A                                    事务B
+<hr>
+begin;                                   begin;
+<hr>
+update class_teacher set class_name =    update class_teacher set class_name ="初三三班" 
+"初三二班" where teacher_id = 1;         where teacher_id = 1;
+<hr>
+                                         ERROR 1205 (HY000): Lock wait timeout exceeded, 
+                                         try restarting transation
+<hr>
+commit;
+<hr>
+</pre>
+
+<p>为了防止并发过程中的修改冲突，事务A中MySql给teacher<em>id=1的数据加锁，并一直不commit释放锁，那么事务B也就一直拿不到行锁，wait直到超时； <br>
+这里需要注意的是，teacher</em>id是有索引的，如果没有索引的class<em>name呢？ <br>
+Mysql在执行update class</em>teacher set class<em>name = "初三二班" where teacher</em>id = 1; 会给所有行数据加行锁，这是因为当sql运行的时候，MySql并不知道哪些数据行是class<em>name="初三一班"的，如果一个条件无法通过索引快速过滤，存储引擎层面就会将所有记录加锁后返回，再由MySql Server层进行过滤； <br>
+在实际的使用过程中，MySql做了一些改进，在Mysql server过滤条件发现不满足后，会调用unlock</em>row方法，把不满足条件的记录释放锁，这样做，保证了最后会有持有满足条件记录上的锁，但是每条记录的加锁操作时不能省略的。 <br>
+这种情况同样适用于Mysql的默认隔离级别RR，所以对一个数据量很大的表做批量修改的时候，如果无法使用相应的索引，MySql Server过滤数据的时候特别慢，就会出现虽然没有修改某些行的数据，但是它们还是被锁住了的现象；</p>
+
+<p>2）Repeated Read（可重复读） <br>
+这是Mysql中InnoDB默认的隔离级别，可以分为读和写两个模块来分析； <br>
+（1）读就是可重读，是指一个事务的多个实例在并发读取数据时，会看到同样的数据行； <br>
+先看一下RC模式下的展示：</p>
+
+<pre><hr>
+事务A                                      事务B
+<hr>
+begin;                                      begin;
+<hr>
+select id, class_name, teacher_id from 
+class_teacher where teacher_id =1;
+--------------------------------
+id  class_name  teacher_id
+1   初三二班    1
+2   初三一班    1
+---------------------------------
+
+                                             update class_teacher set class_name =
+                                             "初三三班" where id = 1;
+                                             commit;
+<hr>
+select id, class_name, teacher_id from 
+class_teacher where teacher_id =1;
+---------------------------------
+id  class_name  teacher_id
+1   初三三班    1
+2   初三一班    1
+---------------------------------
+<hr>  
+
+读到了事务B修改的数据，和第一次查询的
+结果不一样，是不可重复读；
+<hr>
+commit;
+<hr>
+</pre>   
+
+<p>事务B修改id=1的数据提交之后，事务A同样的查询，后一次和前一次的结果不一样，这就是不可重复读，这就可能带来一些问题。 <br>
+下面，看一下RR级别中，MySql的表现：<span class="diff"></span></p>
+
+<pre><hr>
+事务A                      事务B                  事务C
+<hr>
+begin；
+                           begin;
+                                                   begin;
+<hr>
+select id,class_name,
+teacher_id from 
+class_teacher where
+teacher_id =1;
+--------------------------
+id  class_name  teacher_id
+1   初三二班    1
+2   初三一班    1
+--------------------------
+<hr>
+                          update class_teacher
+                          set class_name = 
+                          "初三三班" where
+                          id = 1;
+                          commit;
+<hr>
+                                                   insert into class_teacher
+                                                   values(null, "初三三班",1);
+                                                   commit;
+<hr>
+select id,class_name,
+teacher_id from 
+class_teacher where
+teacher_id =1;
+--------------------------
+id  class_name  teacher_id
+1   初三二班    1
+2   初三一班    1
+--------------------------
+没有读到事务B修改的数据；
+没有读到事务C添加的数据；
+<hr>
+commit;
+<hr>   
+</pre>
+
+<p>我们注意到，当teacher_id=1时，事务A先做了一次读取，事务B中间修改了id=1的数据，并commit之后，事务A第二次读到的数据和第一次完全相同，所以说它是可重读的。</p></div>
+</div>
+            </div>
+        </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="copyright text-muted">Copyright &copy; Ting Blog 2017</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/tether.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="../js/clean-blog.js"></script>
+
+</body>
+
+</html>

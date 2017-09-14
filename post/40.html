@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ting Blog</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../css/clean-blog.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+    <!-- Temporary navbar container fix -->
+    <style>
+    .navbar-toggler {
+        z-index: 1;
+    }
+    
+    @media (max-width: 576px) {
+        nav > .container {
+            width: 100%;
+        }
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar fixed-top navbar-toggleable-md navbar-light" id="mainNav">
+        <div class="container">
+            <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                Menu <i class="fa fa-bars"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.html">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../post.html">文章</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <header class="masthead" style="background-image: url('../img/post-bg.jpg')">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <div class="post-heading">
+                        <h3>mysql--Innodb中的事务等级和锁的关系（2）</h3>
+                        <!-- <h2 class="subheading">Problems look mighty small from 150 miles up</h2> -->
+                        <!-- <span class="meta">Posted by <a href="#">Start Bootstrap</a> on August 24, 2017</span> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Post Content -->
+    <article>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+<div id="md-preview">
+
+<h5>不可重复读和幻读</h5>
+
+<p>不可重复读和幻读两者之间有些类似，但不可重复读重点在于update和delete，而幻读的重点在于insert. <br>
+如果使用锁机制来实现两种事务隔离，在可重复读中，该sql第一次取到数据后，就将这些数据加锁，其它事务无法修改这些数据，就可以实现重复读了。但是这种加锁的方式却无法锁住insert数据，但是当事务A先前读取了数据，或者修改了全部数据，但是事务B还是可以insert数据提交，这时候事务A就会莫名其妙多了一条之间没有的数据，这就是幻读，幻读是不能通过行锁来避免。需要Serialiazable隔离级别，读用读锁，写用写锁，读锁和写锁互斥，这么做可以有效的避免幻读，不可重复读，脏读等问题，但会极大地降低数据库的并发能力。 <br>
+所以说，不可重复读和幻读最大的区别，就在于如何通过锁机制来解决他们MVCC（多版本并发控制）来避免这两种问题。</p>
+
+<h5>悲观锁和乐观锁</h5>
+
+<p>1）悲观锁 <br>
+它指的是对数据被外界，包括系统当前的其他事务，以及来在外部系统的事务处理，修改持保守态度，因此，在整个数据处理过程中，将数据处于锁定状态。悲观锁的实现，往往依靠数据库提供的锁机制，也只有数据库层面提供的锁机制才能正真保证数据访问的排他性，否则，即使在本系统中实现了加锁机制，也无法保证外部系统不会修改数据。 <br>
+在悲观锁的情况下，为了保证事务的隔离性，就需要一致性锁定读，读数据时给锁，其它事务无法修改这些数据，修改删除数据也要加锁，其它事务无法读取这些数据。 <br>
+2）乐观锁 <br>
+现对于悲观锁，乐观锁采取了更加宽松的加锁机制，悲观锁大多数情况下依靠数据库的锁机制实现，以保证操作最大程度的独占性，但随之而来的就是数据库性能的大量开销，对于长事务而言，这样的开销往往无法承受。 <br>
+乐观锁机制在一定程度上解决了这个问题，乐观锁，大多数基于数据版本（version）记录机制实现的。 <br>
+数据版本，即为数据增加一个版本标识，在基于数据库表的版本解决方案中，一般是通过为数据库表增加一个version字段来实现。读取数据时，将此版本号一同独处，之后更新时，对此版本号加1，此时，将提交数据的版本数据与数据库表对应记录的当前版本信息进行对比，如果提交的数据版本号大于数据库表当前版本号，则予以更新，否则认为是过期数据。</p>
+
+<h5>MVCC在Mysql的InnoDB中的实现</h5>
+
+<p>在InnoDB中，会在每行数据后添加两个额外的隐藏的值来实现MVCC，这两个值一个记录这行数据何时被创建，另外一个行记录这行数据何时过期或者被删除。在实际操作中，存储的并不是时间，而是事务的版本号，每开启一个新事务，事务的版本号就会递增，在可重读Repeatable reads事务隔离等级如下： <br>
+· SELECT时，读取创建版本号&lt;=当前事务版本号，删除版本号为空或者&gt;当前事务版本号。 <br>
+· INSERT时，保存当前事务版本号为行的创建版本号； <br>
+· DELETE时，保存当前事务版本号为行的删除版本号； <br>
+· UPDATE时，插入一条新纪录，保存当前事务版本号为行创建版本号，同时保存当前事务版本号到原来删除的行；</p>
+
+<p>通过MVCC，虽然每行记录都需要额外的存储空间，更多的行检查工作以及一些额外的维护工作，但是可以减少锁的使用，大多数读操作都不用加锁，读数据操作很简单，性能很好，而且也能保证只会读取到符合标准的行，也只锁住必要行。</p>
+
+<p>虽然在理论上RR是无法解决幻读问题的，但是在前面一节的例子中，事务C添加了一条teacher<em>id=1的数据，然后commit，RR级别中应该会有幻读现象，事务A在查询teacher</em>id=1的数据时会读到事务C新加的数据，但是测试后发现，在Mysql中不存在这种情况，在事务C提交后，事务A还是不会读到这条数据，可见在MySql的RR级别中，是解决了幻读的问题。 <br>
+<img class="img" src="../img/iamge027.png"> <br>
+读问题解决了，根据MVCC的定义，并发提交数据时会出现冲突，那该如何解决冲突呢？</p>
+
+<h5>“读”和“读”的区别</h5>
+
+<p>在Mysql中的读，和事务隔离级别中的读，是不一样的。 <br>
+在RR级别中，通过MVCC机制，虽然可以让数据变得可重复读，但我们读到的数据可能是历史数据，是不即时的数据，不是数据库当前的数据。在一些对于数据的时效特别敏感的业务中，可能会出现问题。 <br>
+对于读取历史数据的方式，称之为快照读(snapshot read)，而读取数据库当前版本数据的方式，叫当前读(current read)，在MVCC中： <br>
+1）快照读：就是selete</p>
+
+<pre>select * from table ...;
+</pre>
+
+<p>2）当前读 <br>
+特殊的读操作，插入/更新/删除操作，都属于当前读，处理的都是当前数据，需要加锁。</p>
+
+<pre>select * from table where ? lock in share mode;
+select * from table where ? for update;
+insert;
+update;
+delete;
+</pre>
+
+<p>事务的隔离等级，实际上都是定义了当前读的级别，Mysql为了减少锁处理的时间，提升并发能力，引入了快照读的概念，使得select不用加锁，而update、insert这些当前读，就需要另外的模块来解决；</p>
+
+<h5>“写”（当前读）</h5>
+
+<p>事务的隔离级别中虽然制定了读数据的要求，实际上这也可以说是写数据的要求，上文的“读”，实际上讲的快照读，而这里所说的写，实际上就是当前读了，额日了解决当前读中幻读的问题，MySql事务使用了Netx-Key锁；</p>
+
+<h5>Next-Key锁</h5>
+
+<p>Next-key锁时行锁和GAP（间隙锁）的合并，行锁，前文已经介绍过了，下面说一下GAP间隙锁； <br>
+行锁可以防止不同事务版本的数据修改提交时造成数据冲突的情况，但是如何避免别的事务插入数据就成了问题，看一下RR级别和RC级别的对比 <br>
+RC级别 ：</p>
+
+<pre><hr>
+事务A                              事务B
+<hr>
+begin;            
+                                   begin;
+<hr>
+select id,class_name,teacher_id 
+from class_teacher where 
+teacher_id=30;
+---------------------------
+id  class_name  teacher_id
+2   初三二班    30
+----------------------------
+<hr>
+update class_teacher set class_name
+='初三四班' where teacher_id=30;
+<hr>
+                                    insert into class_teacher values (null,'初三二班',30);
+                                    commit;
+<hr>
+select id,class_name,teacher_id 
+from class_teacher where 
+teacher_id=30;
+----------------------------
+id  class_name  teacher_id
+2   初三四班    30
+10  初三二班    30
+----------------------------
+<hr>
+</pre>
+
+<p>RR级别：</p>
+
+<pre><hr>
+事务A                                 事务B
+<hr>
+begin;
+                                      begin;
+<hr>
+select id,class_name,teacher_id from 
+class_teacher where teacher_id=30;
+------------------------------
+id  class_name  teacher_id
+2   初三二班    30    
+------------------------------ 
+<hr>
+update class_teacher set class_name
+='初三四班' where teacher_id=30;   
+<hr>
+                                     insert into class_teacher values (null,'初三二班',30);
+                                     waiting...                       
+<hr>
+select id,class_name,teacher_id from
+ class_teacher where teacher_id=30;
+----------------------------
+id  class_name  teacher_id
+2   初三四班    30
+----------------------------
+<hr>
+commit;                              事务Acommit后，
+                                     事务B的insert执行                
+<hr>    
+</pre>
+
+<p>通过对比可以发现，在RC级别中，事务A修改了teacher<em>id=30的数据，但是当事务B insert进新数据后，事务A发现莫名其妙多了一行teacher</em>id=30的数据，而且没有被之前的update语句所修改，这就是当前读的幻读； <br>
+RR级别中，事务A在uodate千户读的数据保持一致，避免了幻读，这个锁就是GAP锁；</p>
+
+<h5>Mysql实现GAP锁</h5>
+
+<p>在class<em>teacher这张表中，teacher</em>id是个索引，那么那就会像维护一套B+树的数据关系，为了简化，可以用链表结构来表达。 <br>
+<img class="img" src="../img/iamge028.png"> <br>
+如图所示，InnoDB使用的是聚簇索引，teacher_id为二级索引，要维护一个索引字段和主键id的树状机构，并保持顺序排列。 <br>
+InnoDB将这段数据分成几个分区 <br>
+· (negative infinity, 5], <br>
+· (5, 30], <br>
+· (30, positive infinity);</p>
+
+<p>update class<em>teacher set class</em>name="初三四班" where teacher_id=30; <br>
+不仅用行锁锁住了响应的行数据，同时也在两边的区域，(5,30]和(30, positive infinity)，都加入了GAP锁，这样事务B就无法在这两个区间insert进新数据； <br>
+受限于这种实现方式，InnoDB很多时候会锁住不需要锁的区间，如下所示：</p>
+
+<pre><hr>
+事务A                            事务B                       事务C
+<hr>
+begin;                            begin;                      begin;
+<hr>
+select id,class_name,teacher_id 
+from class_teacher;
+------------------------------
+id  class_name  teacher_id
+1   初三一班    5
+2   初三二班    30
+------------------------------
+<hr>
+update class_teacher set 
+class_name='初一一班' where 
+teacher_id=20;
+<hr>
+                                 insert into class_teacher     insert into class_teacher 
+                                 values (null,'初三五班',10);  values (null,'初三五班',40);
+
+                                 waiting .....                  
+<hr>
+commit;                          事务Acommit之后，这条         commit;
+                                 数据才插入成功                       
+<hr>
+                                  commit;                             
+<hr>                                                
+</pre>
+
+<p>update的teacher<em>id=20在(5,30]区间，即使没有修改任何数据，In弄DB也会在这个区间加GAP锁，而其他区间不会影响，事务C正常插入； <br>
+如果使用的是没有索引的字段，比如update class</em>teacher set teacher<em>id = 7 where class</em>name="初三八班";那么会给全表加入gap锁，因为没有缩印，则这些字段也就没有排序，也就没有区间，除非该事务提交，否则其它事务无法插入任何数据； <br>
+行锁仿真别的事务修改或者删除，GAP锁防止别的事务新增，行锁和GAP锁结合形成的Next-Key锁共同解决了RR级别在写数据时的幻读问题；</p>
+
+<h5>Serializable</h5>
+
+<p>这个级别很简单，读加共享锁，写加排他锁，读写互斥，使用的悲观锁理论，实现简单，数据更加安全，但是并发能力非常差。</p><span class="diff"></span></div>
+</div>
+            </div>
+        </div>
+    </article>
+
+    <hr>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1">
+                    <ul class="list-inline text-center">
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-facebook fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">
+                                <span class="fa-stack fa-lg">
+                                    <i class="fa fa-circle fa-stack-2x"></i>
+                                    <i class="fa fa-github fa-stack-1x fa-inverse"></i>
+                                </span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="copyright text-muted">Copyright &copy; Ting Blog 2017</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/tether.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+
+    <!-- Custom scripts for this template -->
+    <script src="../js/clean-blog.js"></script>
+
+</body>
+
+</html>
